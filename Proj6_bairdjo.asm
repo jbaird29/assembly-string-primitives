@@ -20,8 +20,9 @@ mGetString MACRO prompt, output, size, bytesRead
 	MOV		EDX, output
 	MOV		ECX, size
 	CALL	ReadString
-	MOV		bytesRead, EAX
-	PUSH	EAX
+	MOV		EDI, bytesRead
+	MOV		[EDI], EAX
+	POP		EAX
 	POP		ECX
 	POP		EDX
 ENDM
@@ -44,12 +45,16 @@ greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird
 prompt			BYTE	"Please provide 10 signed decimal integers. ",13,10,
 						"Each number needs to be small enough to fit inside a 32 bit register. ",
 						"After you have finished inputting the raw numbers I will display a list ",
-						"of the integers, their sum, and their average value."
+						"of the integers, their sum, and their average value.",13,10,13,10
 
 
 .code
 main PROC
-	mGetString OFFSET prompt, OFFSET saved, SIZEOF saved, bytesRead
+	PUSH	OFFSET bytesRead
+	PUSH	SIZEOF saved
+	PUSH	OFFSET saved
+	PUSH	OFFSET prompt
+	CALL	ReadVal
 	CALL	CrLf
 	mDisplayString OFFSET saved
 	CALL	CrLf
@@ -58,8 +63,43 @@ main PROC
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
 
-; (insert additional procedures here)
+; ------------------------------------------------------------------------------------
+; Name: ReadVal
+; Description: [++++++++++++TBU++++++++++++]
+; Preconditions: [++++++++++++TBU++++++++++++]
+; Postconditions: [++++++++++++TBU++++++++++++]
+; Receives: 
+;	[EBP + 8] = address of a prompt to display to the user
+;	[EBP + 12] = address of the location to which the string is saved
+;	[EBP + 16] = maximum number of BYTES which can be read
+;	[EBP + 20] = count of the number of BYTES actually read
+; Returns: none
+; ------------------------------------------------------------------------------------
+ReadVal PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
+	POP		EBP
+	RET		16
+ReadVal ENDP
 
+
+; ------------------------------------------------------------------------------------
+; Name: WriteVal
+; Description: [++++++++++++TBU++++++++++++]
+; Preconditions: [++++++++++++TBU++++++++++++]
+; Postconditions: [++++++++++++TBU++++++++++++]
+; Receives: 
+;	[EBP + 8] = 
+;	[EBP + 12] = 
+;	[EBP + 16] = 
+;	[EBP + 20] = 
+; Returns: none
+; ------------------------------------------------------------------------------------
+WriteVal PROC
+	; TBU
+
+WriteVal ENDP
 
 
 END main

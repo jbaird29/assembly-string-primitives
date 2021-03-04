@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 22:31:24
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Page 1 - 1
 
 
@@ -41,8 +41,9 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
 					MOV		EDX, output
 					MOV		ECX, size
 					CALL	ReadString
-					MOV		bytesRead, EAX
-					PUSH	EAX
+					MOV		EDI, bytesRead
+					MOV		[EDI], EAX
+					POP		EAX
 					POP		ECX
 					POP		EDX
 				ENDM
@@ -125,47 +126,88 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
 	   68 65 69 72 20
 	   61 76 65 72 61
 	   67 65 20 76 61
-	   6C 75 65 2E
+	   6C 75 65 2E 0D
+	   0A 0D 0A
 										"Each number needs to be small enough to fit inside a 32 bit register. ",
 										"After you have finished inputting the raw numbers I will display a list ",
-										"of the integers, their sum, and their average value."
+										"of the integers, their sum, and their average value.",13,10,13,10
 
 
  00000000			.code
  00000000			main PROC
-					mGetString OFFSET prompt, OFFSET saved, SIZEOF saved, bytesRead
- 00000000  52		     1		PUSH	EDX
- 00000001  51		     1		PUSH	ECX
- 00000002  50		     1		PUSH	EAX
- 00000003  BA 00000076 R     1		MOV		EDX, OFFSET prompt
- 00000008  E8 00000000 E     1		CALL	WriteString
- 0000000D  BA 00000028 R     1		MOV		EDX, OFFSET saved
- 00000012  B9 0000000A	     1		MOV		ECX, SIZEOF saved
- 00000017  E8 00000000 E     1		CALL	ReadString
- 0000001C  A3 00000032 R     1		MOV		bytesRead, EAX
- 00000021  50		     1		PUSH	EAX
- 00000022  59		     1		POP		ECX
- 00000023  5A		     1		POP		EDX
- 00000024  E8 00000000 E		CALL	CrLf
+ 00000000  68 00000032 R		PUSH	OFFSET bytesRead
+ 00000005  6A 0A			PUSH	SIZEOF saved
+ 00000007  68 00000028 R		PUSH	OFFSET saved
+ 0000000C  68 00000076 R		PUSH	OFFSET prompt
+ 00000011  E8 00000027			CALL	ReadVal
+ 00000016  E8 00000000 E		CALL	CrLf
 					mDisplayString OFFSET saved
- 00000029  52		     1		PUSH	EDX
- 0000002A  BA 00000028 R     1		MOV		EDX, OFFSET saved
- 0000002F  E8 00000000 E     1		CALL	WriteString
- 00000034  5A		     1		POP		EDX
- 00000035  E8 00000000 E		CALL	CrLf
- 0000003A  A1 00000032 R		MOV		EAX, bytesRead
- 0000003F  E8 00000000 E		CALL	WriteDec
+ 0000001B  52		     1		PUSH	EDX
+ 0000001C  BA 00000028 R     1		MOV		EDX, OFFSET saved
+ 00000021  E8 00000000 E     1		CALL	WriteString
+ 00000026  5A		     1		POP		EDX
+ 00000027  E8 00000000 E		CALL	CrLf
+ 0000002C  A1 00000032 R		MOV		EAX, bytesRead
+ 00000031  E8 00000000 E		CALL	WriteDec
 					Invoke ExitProcess,0	; exit to operating system
- 00000044  6A 00	   *	    push   +000000000h
- 00000046  E8 00000000 E   *	    call   ExitProcess
- 0000004B			main ENDP
+ 00000036  6A 00	   *	    push   +000000000h
+ 00000038  E8 00000000 E   *	    call   ExitProcess
+ 0000003D			main ENDP
 
-				; (insert additional procedures here)
+				; ------------------------------------------------------------------------------------
+				; Name: ReadVal
+				; Description: [++++++++++++TBU++++++++++++]
+				; Preconditions: [++++++++++++TBU++++++++++++]
+				; Postconditions: [++++++++++++TBU++++++++++++]
+				; Receives: 
+				;	[EBP + 8] = address of a prompt to display to the user
+				;	[EBP + 12] = address of the location to which the string is saved
+				;	[EBP + 16] = maximum number of BYTES which can be read
+				;	[EBP + 20] = count of the number of BYTES actually read
+				; Returns: none
+				; ------------------------------------------------------------------------------------
+ 0000003D			ReadVal PROC
+ 0000003D  55				PUSH	EBP
+ 0000003E  8B EC			MOV		EBP, ESP
+					mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
+ 00000040  52		     1		PUSH	EDX
+ 00000041  51		     1		PUSH	ECX
+ 00000042  50		     1		PUSH	EAX
+ 00000043  8B 55 08	     1		MOV		EDX, [EBP + 8]
+ 00000046  E8 00000000 E     1		CALL	WriteString
+ 0000004B  8B 55 0C	     1		MOV		EDX, [EBP + 12]
+ 0000004E  8B 4D 10	     1		MOV		ECX, [EBP + 16]
+ 00000051  E8 00000000 E     1		CALL	ReadString
+ 00000056  8B 7D 14	     1		MOV		EDI, [EBP + 20]
+ 00000059  89 07	     1		MOV		[EDI], EAX
+ 0000005B  58		     1		POP		EAX
+ 0000005C  59		     1		POP		ECX
+ 0000005D  5A		     1		POP		EDX
+ 0000005E  5D				POP		EBP
+ 0000005F  C2 0010			RET		16
+ 00000062			ReadVal ENDP
 
+
+				; ------------------------------------------------------------------------------------
+				; Name: WriteVal
+				; Description: [++++++++++++TBU++++++++++++]
+				; Preconditions: [++++++++++++TBU++++++++++++]
+				; Postconditions: [++++++++++++TBU++++++++++++]
+				; Receives: 
+				;	[EBP + 8] = 
+				;	[EBP + 12] = 
+				;	[EBP + 16] = 
+				;	[EBP + 20] = 
+				; Returns: none
+				; ------------------------------------------------------------------------------------
+ 00000062			WriteVal PROC
+					; TBU
+
+ 00000062			WriteVal ENDP
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 22:31:24
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Symbols 2 - 1
 
 
@@ -267,8 +309,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000165 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000004B Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000169 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000062 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -338,6 +380,7 @@ ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadVal  . . . . . . . . . . . .	P Near	 0000003D _TEXT	Length= 00000025 Public STDCALL
 SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -374,8 +417,9 @@ WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteVal . . . . . . . . . . . .	P Near	 00000062 _TEXT	Length= 00000000 Public STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000004B Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000003D Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
