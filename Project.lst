@@ -1,16 +1,16 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    02/02/21 13:47:39
-#Program Template     (template.asm			     Page 1 - 1
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
+4String Primitives and Macros     (Proj6_bairdjo.asm	     Page 1 - 1
 
 
-				TITLE Program Template     (template.asm)
+				TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 
-				; Author: 
-				; Last Modified:
-				; OSU email address: ONID_ID@oregonstate.edu
-				; Course number/section:   CS271 Section ???
-				; Project Number:                 Due Date:
-				; Description: This file is provided as a template from which you may work
-				;              when developing assembly projects in CS271.
+				; Author: Jon Baird
+				; Last Modified: 3/4/2021
+				; OSU email address: bairdjo@oregonstate.edu
+				; Course number/section:   CS271 Section 401
+				; Project Number: 6                Due Date: 3/14/2021
+				; Description: This program reads 10 signed integers from the user via console input
+				;              then calculates the sum and average and displays to the user.
 
 				INCLUDE Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
@@ -32,34 +32,151 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    02/02/21 13:47:39
 			      C 
 
 				; (insert macro definitions here)
+				mGetString MACRO prompt, output, size, bytesRead
+					PUSH	EDX
+					PUSH	ECX
+					PUSH	EAX
+					MOV		EDX, prompt
+					CALL	WriteString
+					MOV		EDX, output
+					MOV		ECX, size
+					CALL	ReadString
+					MOV		bytesRead, EAX
+					PUSH	EAX
+					POP		ECX
+					POP		EDX
+				ENDM
+
+				mDisplayString MACRO string
+					PUSH	EDX
+					MOV		EDX, string
+					CALL	WriteString
+					POP		EDX
+				ENDM
 
 				; (insert constant definitions here)
+ = 0000000A			TEST_COUNT = 10
 
  00000000			.data
+ 00000000  0000000A [		numArray		SDWORD	TEST_COUNT DUP(?)
+	    00000000
+	   ]
+ 00000028  0000000A [		saved			BYTE	10 DUP(0)
+	    00
+	   ]
+ 00000032 00000000		bytesRead		DWORD	?
+ 00000036 50 72 6F 6A 65	greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird"
+	   63 74 20 36 3A
+	   20 44 65 73 69
+	   67 6E 69 6E 67
+	   20 6C 6F 77 2D
+	   6C 65 76 65 6C
+	   20 49 2F 4F 20
+	   70 72 6F 63 65
+	   64 75 72 65 73
+	   2E 20 20 20 20
+	   20 42 79 3A 20
+	   4A 6F 6E 20 42
+	   61 69 72 64
+ 00000076 50 6C 65 61 73	prompt			BYTE	"Please provide 10 signed decimal integers. ",13,10,
+	   65 20 70 72 6F
+	   76 69 64 65 20
+	   31 30 20 73 69
+	   67 6E 65 64 20
+	   64 65 63 69 6D
+	   61 6C 20 69 6E
+	   74 65 67 65 72
+	   73 2E 20 0D 0A
+	   45 61 63 68 20
+	   6E 75 6D 62 65
+	   72 20 6E 65 65
+	   64 73 20 74 6F
+	   20 62 65 20 73
+	   6D 61 6C 6C 20
+	   65 6E 6F 75 67
+	   68 20 74 6F 20
+	   66 69 74 20 69
+	   6E 73 69 64 65
+	   20 61 20 33 32
+	   20 62 69 74 20
+	   72 65 67 69 73
+	   74 65 72 2E 20
+	   41 66 74 65 72
+	   20 79 6F 75 20
+	   68 61 76 65 20
+	   66 69 6E 69 73
+	   68 65 64 20 69
+	   6E 70 75 74 74
+	   69 6E 67 20 74
+	   68 65 20 72 61
+	   77 20 6E 75 6D
+	   62 65 72 73 20
+	   49 20 77 69 6C
+	   6C 20 64 69 73
+	   70 6C 61 79 20
+	   61 20 6C 69 73
+	   74 20 6F 66 20
+	   74 68 65 20 69
+	   6E 74 65 67 65
+	   72 73 2C 20 74
+	   68 65 69 72 20
+	   73 75 6D 2C 20
+	   61 6E 64 20 74
+	   68 65 69 72 20
+	   61 76 65 72 61
+	   67 65 20 76 61
+	   6C 75 65 2E
+										"Each number needs to be small enough to fit inside a 32 bit register. ",
+										"After you have finished inputting the raw numbers I will display a list ",
+										"of the integers, their sum, and their average value."
 
-				; (insert variable definitions here)
 
  00000000			.code
  00000000			main PROC
-
-				; (insert executable instructions here)
- 00000000  6A 01		push 1
- 00000002  6A 02		push 2
- 00000004  58			pop eax
- 00000005  5B			pop ebx
-
+					mGetString OFFSET prompt, OFFSET saved, SIZEOF saved, bytesRead
+ 00000000  52		     1		PUSH	EDX
+ 00000001  51		     1		PUSH	ECX
+ 00000002  50		     1		PUSH	EAX
+ 00000003  BA 00000076 R     1		MOV		EDX, OFFSET prompt
+ 00000008  E8 00000000 E     1		CALL	WriteString
+ 0000000D  BA 00000028 R     1		MOV		EDX, OFFSET saved
+ 00000012  B9 0000000A	     1		MOV		ECX, SIZEOF saved
+ 00000017  E8 00000000 E     1		CALL	ReadString
+ 0000001C  A3 00000032 R     1		MOV		bytesRead, EAX
+ 00000021  50		     1		PUSH	EAX
+ 00000022  59		     1		POP		ECX
+ 00000023  5A		     1		POP		EDX
+ 00000024  E8 00000000 E		CALL	CrLf
+					mDisplayString OFFSET saved
+ 00000029  52		     1		PUSH	EDX
+ 0000002A  BA 00000028 R     1		MOV		EDX, OFFSET saved
+ 0000002F  E8 00000000 E     1		CALL	WriteString
+ 00000034  5A		     1		POP		EDX
+ 00000035  E8 00000000 E		CALL	CrLf
+ 0000003A  A1 00000032 R		MOV		EAX, bytesRead
+ 0000003F  E8 00000000 E		CALL	WriteDec
 					Invoke ExitProcess,0	; exit to operating system
- 00000006  6A 00	   *	    push   +000000000h
- 00000008  E8 00000000 E   *	    call   ExitProcess
- 0000000D			main ENDP
+ 00000044  6A 00	   *	    push   +000000000h
+ 00000046  E8 00000000 E   *	    call   ExitProcess
+ 0000004B			main ENDP
 
 				; (insert additional procedures here)
 
+
+
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    02/02/21 13:47:39
-#Program Template     (template.asm			     Symbols 2 - 1
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/03/21 21:56:39
+4String Primitives and Macros     (Proj6_bairdjo.asm	     Symbols 2 - 1
 
 
+
+
+Macros:
+
+                N a m e                 Type
+
+mDisplayString . . . . . . . . .	Proc
+mGetString . . . . . . . . . . .	Proc
 
 
 Structures and Unions:
@@ -150,8 +267,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000000 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000000D Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000165 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000004B Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -258,7 +375,7 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000000D Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000004B Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -394,6 +511,7 @@ STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah
 STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
 SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
 TAB  . . . . . . . . . . . . . .	Number	 00000009h   
+TEST_COUNT . . . . . . . . . . .	Number	 0000000Ah   
 TRUE . . . . . . . . . . . . . .	Number	 00000001h   
 TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
 VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
@@ -480,10 +598,12 @@ WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
+bytesRead  . . . . . . . . . . .	DWord	 00000032 _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
+greeting . . . . . . . . . . . .	Byte	 00000036 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -491,7 +611,10 @@ lightGreen . . . . . . . . . . .	Number	 0000000Ah
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
+numArray . . . . . . . . . . . .	DWord	 00000000 _DATA	
+prompt . . . . . . . . . . . . .	Byte	 00000076 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
+saved  . . . . . . . . . . . . .	Byte	 00000028 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
