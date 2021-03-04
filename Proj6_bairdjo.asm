@@ -42,8 +42,8 @@ TEST_COUNT = 10
 
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
-saved			BYTE	10 DUP(0)
-value			DWORD	?
+saved			BYTE	11 DUP(0)
+value			SDWORD	?
 bytesRead		DWORD	?
 greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
 instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
@@ -115,7 +115,8 @@ _getString:
 _charLoop:
 	; multiply accumulator by 10 and temporarily store into EBX
 	MOV		EBX, 10
-	IMUL	EBX			
+	IMUL	EBX
+	JO		_notValid
 	MOV		EBX, EAX
 	; load the integer string, subtract by 48 to convert from ASCII to integer number
 	MOV		EAX, 0					; empty the accumulator
@@ -127,6 +128,7 @@ _charLoop:
 	SUB		AL, 48
 	; add the prior accumulator to this number and loop to next digit
 	ADD		EAX, EBX
+	JO		_notValid
 	LOOP	_charLoop
 	; store into the output and end the procedure
 	MOV		[EDI], EAX
@@ -136,8 +138,6 @@ _notValid:
 	MOV		EDX, [EBP + 28]
 	CALL	WriteString
 	JMP		_getString
-
-
 
 _end:
 	POP		EBX
