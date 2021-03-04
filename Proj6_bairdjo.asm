@@ -11,7 +11,7 @@ TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 INCLUDE Irvine32.inc
 
 ; (insert macro definitions here)
-mGetString MACRO prompt, output, size, bytesRead
+mGetString MACRO prompt:REQ, output:REQ, size:REQ, bytesRead:REQ
 	PUSH	EDX
 	PUSH	ECX
 	PUSH	EAX
@@ -98,13 +98,11 @@ main ENDP
 ; TODO - this incorrectly reads an overflow for -2147483648
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
-	PUSH	EBP
-	MOV		EBP, ESP
+	LOCAL	Sign:DWORD, MultipliedVal:SDWORD
 	PUSH	ESI
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	EDX
-	PUSH	1						; the sign of the integer; push to stack for temp storage
 _getString:
 	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
 	; set up the registers
@@ -113,6 +111,7 @@ _getString:
 	MOV		ESI, [EBP + 12]			; address of the integer string as source
 	MOV		EDI, [EBP + 24]			; address of destination
 	MOV		EAX, 0					; empty the accumulator
+	MOV		Sign, 0					; set up the sign as 0 (for positive)
 	
 	; see if the first digit is a '+' or a '-'
 	MOV		BL, [ESI]
@@ -123,20 +122,19 @@ _getString:
 	JMP		_charLoop
 
 _minusSymbol:
-	; for minus symbol, change the sign from +1 to -1
-	POP		EBX
-	PUSH	-1
+	; if first digit is a '-' change the sign to 1 (for negative)
+	MOV		Sign, 1
 _plusSymbol:
-	; for both plus and minus, increment to the next digit and decrement the count
+	; for either symbol, increment to the next digit and decrement the character count
 	INC		ESI
 	DEC		ECX
 
 _charLoop:
-	; multiply accumulator by 10 and temporarily store into EBX
+	; multiply accumulator by 10 and temporarily store into local variable
 	MOV		EBX, 10
 	IMUL	EBX
 	JO		_notValid
-	MOV		EBX, EAX
+	MOV		MultipliedVal, EAX
 	; load the integer string digit, subtract by 48 to convert from ASCII to integer number
 	MOV		EAX, 0					; empty the upper range of the accumulator
 	LODSB
@@ -146,12 +144,14 @@ _charLoop:
 	JA		_notValid
 	SUB		AL, 48
 	; add the prior accumulator to this number and loop to next digit
-	ADD		EAX, EBX
+	CMP		Sign, 0
+	JE		_positive
+	NEG		EAX						; if sign is negative, change the value to negative
+_positive:
+	ADD		EAX, MultipliedVal
 	JO		_notValid
 	LOOP	_charLoop
-	; multiply final value by sign and store into the output
-	POP		EBX
-	IMUL	EBX
+	; store final value into the output and end
 	MOV		[EDI], EAX
 	JMP		_end
 
@@ -165,7 +165,6 @@ _end:
 	POP		EBX
 	POP		EAX
 	POP		ESI
-	POP		EBP
 	RET		24
 ReadVal ENDP
 

@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 01:34:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 11:20:05
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Page 1 - 1
 
 
@@ -32,7 +32,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 01:34:39
 			      C 
 
 				; (insert macro definitions here)
-				mGetString MACRO prompt, output, size, bytesRead
+				mGetString MACRO prompt:REQ, output:REQ, size:REQ, bytesRead:REQ
 					PUSH	EDX
 					PUSH	ECX
 					PUSH	EAX
@@ -207,93 +207,98 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 01:34:39
 				;	[EBP + 28] = address of the message if the input was invalid.
 				; Returns:  [++++++++++++TBU++++++++++++]
 				;
-				; TODO - read a + and - sign
 				; TODO - refactor with LOCAL variable?
+				; TODO - this incorrectly reads an overflow for -2147483648
 				; ------------------------------------------------------------------------------------
  0000006A			ReadVal PROC
- 0000006A  55				PUSH	EBP
- 0000006B  8B EC			MOV		EBP, ESP
- 0000006D  56				PUSH	ESI
- 0000006E  50				PUSH	EAX
- 0000006F  53				PUSH	EBX
- 00000070  52				PUSH	EDX
- 00000071  6A 01			PUSH	1						; the sign of the integer; push to stack for temp storage
- 00000073			_getString:
+					LOCAL	Sign:DWORD, MultipliedVal:SDWORD
+ 0000006A  55		   *	    push   ebp
+ 0000006B  8B EC	   *	    mov    ebp, esp
+ 0000006D  83 C4 F8	   *	    add    esp, 0FFFFFFF8h
+ 00000070  56				PUSH	ESI
+ 00000071  50				PUSH	EAX
+ 00000072  53				PUSH	EBX
+ 00000073  52				PUSH	EDX
+ 00000074			_getString:
 					mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
- 00000073  52		     1		PUSH	EDX
- 00000074  51		     1		PUSH	ECX
- 00000075  50		     1		PUSH	EAX
- 00000076  8B 55 08	     1		MOV		EDX, [EBP + 8]
- 00000079  E8 00000000 E     1		CALL	WriteString
- 0000007E  8B 55 0C	     1		MOV		EDX, [EBP + 12]
- 00000081  8B 4D 10	     1		MOV		ECX, [EBP + 16]
- 00000084  E8 00000000 E     1		CALL	ReadString
- 00000089  8B 7D 14	     1		MOV		EDI, [EBP + 20]
- 0000008C  89 07	     1		MOV		[EDI], EAX
- 0000008E  58		     1		POP		EAX
- 0000008F  59		     1		POP		ECX
- 00000090  5A		     1		POP		EDX
+ 00000074  52		     1		PUSH	EDX
+ 00000075  51		     1		PUSH	ECX
+ 00000076  50		     1		PUSH	EAX
+ 00000077  8B 55 08	     1		MOV		EDX, [EBP + 8]
+ 0000007A  E8 00000000 E     1		CALL	WriteString
+ 0000007F  8B 55 0C	     1		MOV		EDX, [EBP + 12]
+ 00000082  8B 4D 10	     1		MOV		ECX, [EBP + 16]
+ 00000085  E8 00000000 E     1		CALL	ReadString
+ 0000008A  8B 7D 14	     1		MOV		EDI, [EBP + 20]
+ 0000008D  89 07	     1		MOV		[EDI], EAX
+ 0000008F  58		     1		POP		EAX
+ 00000090  59		     1		POP		ECX
+ 00000091  5A		     1		POP		EDX
 					; set up the registers
- 00000091  8B 75 14			MOV		ESI, [EBP + 20]
- 00000094  8B 0E			MOV		ECX, [ESI]				; length of string as the counter	
- 00000096  8B 75 0C			MOV		ESI, [EBP + 12]			; address of the integer string as source
- 00000099  8B 7D 18			MOV		EDI, [EBP + 24]			; address of destination
- 0000009C  B8 00000000			MOV		EAX, 0					; empty the accumulator
+ 00000092  8B 75 14			MOV		ESI, [EBP + 20]
+ 00000095  8B 0E			MOV		ECX, [ESI]				; length of string as the counter	
+ 00000097  8B 75 0C			MOV		ESI, [EBP + 12]			; address of the integer string as source
+ 0000009A  8B 7D 18			MOV		EDI, [EBP + 24]			; address of destination
+ 0000009D  B8 00000000			MOV		EAX, 0					; empty the accumulator
+ 000000A2  C7 45 FC			MOV		Sign, 0					; set up the sign as 0 (for positive)
+	   00000000
 					
 					; see if the first digit is a '+' or a '-'
- 000000A1  8A 1E			MOV		BL, [ESI]
- 000000A3  80 FB 2B			CMP		BL, 43
- 000000A6  74 0A			JE		_plusSymbol
- 000000A8  80 FB 2D			CMP		BL, 45
- 000000AB  74 02			JE		_minusSymbol
- 000000AD  EB 05			JMP		_charLoop
+ 000000A9  8A 1E			MOV		BL, [ESI]
+ 000000AB  80 FB 2B			CMP		BL, 43
+ 000000AE  74 0E			JE		_plusSymbol
+ 000000B0  80 FB 2D			CMP		BL, 45
+ 000000B3  74 02			JE		_minusSymbol
+ 000000B5  EB 09			JMP		_charLoop
 
- 000000AF			_minusSymbol:
-					; for minus symbol, change the sign from +1 to -1
- 000000AF  5B				POP		EBX
- 000000B0  6A FF			PUSH	-1
- 000000B2			_plusSymbol:
-					; for both plus and minus, increment to the next digit and decrement the count
- 000000B2  46				INC		ESI
- 000000B3  49				DEC		ECX
+ 000000B7			_minusSymbol:
+					; if first digit is a '-' change the sign to 1 (for negative)
+ 000000B7  C7 45 FC			MOV		Sign, 1
+	   00000001
+ 000000BE			_plusSymbol:
+					; for either symbol, increment to the next digit and decrement the character count
+ 000000BE  46				INC		ESI
+ 000000BF  49				DEC		ECX
 
- 000000B4			_charLoop:
-					; multiply accumulator by 10 and temporarily store into EBX
- 000000B4  BB 0000000A			MOV		EBX, 10
- 000000B9  F7 EB			IMUL	EBX
- 000000BB  70 1F			JO		_notValid
- 000000BD  8B D8			MOV		EBX, EAX
+ 000000C0			_charLoop:
+					; multiply accumulator by 10 and temporarily store into local variable
+ 000000C0  BB 0000000A			MOV		EBX, 10
+ 000000C5  F7 EB			IMUL	EBX
+ 000000C7  70 26			JO		_notValid
+ 000000C9  89 45 F8			MOV		MultipliedVal, EAX
 					; load the integer string digit, subtract by 48 to convert from ASCII to integer number
- 000000BF  B8 00000000			MOV		EAX, 0					; empty the upper range of the accumulator
- 000000C4  AC				LODSB
- 000000C5  3C 30			CMP		AL, 48
- 000000C7  72 13			JB		_notValid
- 000000C9  3C 39			CMP		AL, 57
- 000000CB  77 0F			JA		_notValid
- 000000CD  2C 30			SUB		AL, 48
+ 000000CC  B8 00000000			MOV		EAX, 0					; empty the upper range of the accumulator
+ 000000D1  AC				LODSB
+ 000000D2  3C 30			CMP		AL, 48
+ 000000D4  72 19			JB		_notValid
+ 000000D6  3C 39			CMP		AL, 57
+ 000000D8  77 15			JA		_notValid
+ 000000DA  2C 30			SUB		AL, 48
 					; add the prior accumulator to this number and loop to next digit
- 000000CF  03 C3			ADD		EAX, EBX
- 000000D1  70 09			JO		_notValid
- 000000D3  E2 DF			LOOP	_charLoop
-					; multiply final value by sign and store into the output
- 000000D5  5B				POP		EBX
- 000000D6  F7 EB			IMUL	EBX
- 000000D8  89 07			MOV		[EDI], EAX
- 000000DA  EB 0A			JMP		_end
+ 000000DC  83 7D FC 00			CMP		Sign, 0
+ 000000E0  74 02			JE		_positive
+ 000000E2  F7 D8			NEG		EAX						; if sign is negative, change the value to negative
+ 000000E4			_positive:
+ 000000E4  03 45 F8			ADD		EAX, MultipliedVal
+ 000000E7  70 06			JO		_notValid
+ 000000E9  E2 D5			LOOP	_charLoop
+					; store final value into the output and end
+ 000000EB  89 07			MOV		[EDI], EAX
+ 000000ED  EB 0D			JMP		_end
 
- 000000DC			_notValid:
- 000000DC  8B 55 1C			MOV		EDX, [EBP + 28]
- 000000DF  E8 00000000 E		CALL	WriteString
- 000000E4  EB 8D			JMP		_getString
+ 000000EF			_notValid:
+ 000000EF  8B 55 1C			MOV		EDX, [EBP + 28]
+ 000000F2  E8 00000000 E		CALL	WriteString
+ 000000F7  E9 FFFFFF78			JMP		_getString
 
- 000000E6			_end:
- 000000E6  5A				POP		EDX
- 000000E7  5B				POP		EBX
- 000000E8  58				POP		EAX
- 000000E9  5E				POP		ESI
- 000000EA  5D				POP		EBP
- 000000EB  C2 0018			RET		24
- 000000EE			ReadVal ENDP
+ 000000FC			_end:
+ 000000FC  5A				POP		EDX
+ 000000FD  5B				POP		EBX
+ 000000FE  58				POP		EAX
+ 000000FF  5E				POP		ESI
+ 00000100  C9		   *	    leave  
+ 00000101  C2 0018			RET		24
+ 00000104			ReadVal ENDP
 
 
 				; ------------------------------------------------------------------------------------
@@ -308,14 +313,14 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 01:34:39
 				;	[EBP + 20] = 
 				; Returns: none
 				; ------------------------------------------------------------------------------------
- 000000EE			WriteVal PROC
+ 00000104			WriteVal PROC
 					; TBU
 
- 000000EE			WriteVal ENDP
+ 00000104			WriteVal ENDP
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 01:34:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/04/21 11:20:05
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Symbols 2 - 1
 
 
@@ -418,7 +423,7 @@ Segments and Groups:
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
 _DATA  . . . . . . . . . . . . .	32 Bit	 000001DF Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000000EE Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000104 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -488,13 +493,16 @@ ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-ReadVal  . . . . . . . . . . . .	P Near	 0000006A _TEXT	Length= 00000084 Public STDCALL
-  _getString . . . . . . . . . .	L Near	 00000073 _TEXT	
-  _minusSymbol . . . . . . . . .	L Near	 000000AF _TEXT	
-  _plusSymbol  . . . . . . . . .	L Near	 000000B2 _TEXT	
-  _charLoop  . . . . . . . . . .	L Near	 000000B4 _TEXT	
-  _notValid  . . . . . . . . . .	L Near	 000000DC _TEXT	
-  _end . . . . . . . . . . . . .	L Near	 000000E6 _TEXT	
+ReadVal  . . . . . . . . . . . .	P Near	 0000006A _TEXT	Length= 0000009A Public STDCALL
+  Sign . . . . . . . . . . . . .	DWord	 bp - 00000004
+  MultipliedVal  . . . . . . . .	DWord	 bp - 00000008
+  _getString . . . . . . . . . .	L Near	 00000074 _TEXT	
+  _minusSymbol . . . . . . . . .	L Near	 000000B7 _TEXT	
+  _plusSymbol  . . . . . . . . .	L Near	 000000BE _TEXT	
+  _charLoop  . . . . . . . . . .	L Near	 000000C0 _TEXT	
+  _positive  . . . . . . . . . .	L Near	 000000E4 _TEXT	
+  _notValid  . . . . . . . . . .	L Near	 000000EF _TEXT	
+  _end . . . . . . . . . . . . .	L Near	 000000FC _TEXT	
 SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -531,7 +539,7 @@ WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-WriteVal . . . . . . . . . . . .	P Near	 000000EE _TEXT	Length= 00000000 Public STDCALL
+WriteVal . . . . . . . . . . . .	P Near	 00000104 _TEXT	Length= 00000000 Public STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000006A Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
