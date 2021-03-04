@@ -36,25 +36,42 @@ ENDM
 
 ; (insert constant definitions here)
 TEST_COUNT = 10
+;MAX_NUM = 2147483647
+;MIN_NUM = -2147483648
+
 
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
 saved			BYTE	10 DUP(0)
+value			DWORD	?
 bytesRead		DWORD	?
-greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird"
-prompt			BYTE	"Please provide 10 signed decimal integers. ",13,10,
-						"Each number needs to be small enough to fit inside a 32 bit register. ",
-						"After you have finished inputting the raw numbers I will display a list ",
-						"of the integers, their sum, and their average value.",13,10,13,10
-
+greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
+instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
+						"Each number needs to be small enough to fit inside a 32 bit register. ",13,10,
+						"After you have finished inputting the raw numbers I will display a list of the integers, ",13,10,
+						"their sum, and their average value.",13,10,13,10,0
+prompt			BYTE	"Please enter a signed intger: ",0
+invalidMsg		BYTE	"ERROR. You did not enter a signed number or your number was too big.",13,10,0
 
 .code
 main PROC
+	; introduce the program
+	MOV		EDX, OFFSET greeting
+	CALL	WriteString
+	MOV		EDX, OFFSET instructions
+	CALL	WriteString
+
+	; get a number
+	PUSH	OFFSET invalidMsg
+	PUSH	OFFSET value		; PLACEHOLDER - replace with array location
 	PUSH	OFFSET bytesRead
 	PUSH	SIZEOF saved
 	PUSH	OFFSET saved
 	PUSH	OFFSET prompt
 	CALL	ReadVal
+	CALL	CrLf
+	MOV		EAX, value
+	CALL	WriteInt
 	CALL	CrLf
 	mDisplayString OFFSET saved
 	CALL	CrLf
@@ -70,17 +87,64 @@ main ENDP
 ; Postconditions: [++++++++++++TBU++++++++++++]
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
-;	[EBP + 12] = address of the location to which the string is saved
-;	[EBP + 16] = maximum number of BYTES which can be read
-;	[EBP + 20] = count of the number of BYTES actually read
-; Returns: none
+;	[EBP + 12] = address of the location to which the integer string will be saved
+;	[EBP + 16] = value of the maximum number of BYTES which can be read
+;	[EBP + 20] = address of the count of the number of BYTES actually read
+;	[EBP + 24] = address of the location to which the integer number will be saved
+;	[EBP + 28] = address of the message if the input was invalid.
+; Returns:  [++++++++++++TBU++++++++++++]
+
+; TODO - validatate that there is no overflow
+; TODO - read a + and - sign
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	PUSH	EBP
 	MOV		EBP, ESP
+	PUSH	ESI
+	PUSH	EAX
+	PUSH	EBX
+_getString:
 	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
+	; set up the registers
+	MOV		ESI, [EBP + 20]
+	MOV		ECX, [ESI]				; length of string as the counter	
+	MOV		ESI, [EBP + 12]			; address of the integer string as source
+	MOV		EDI, [EBP + 24]			; address of destination
+	MOV		EAX, 0					; empty the accumulator
+
+_charLoop:
+	; multiply accumulator by 10 and temporarily store into EBX
+	MOV		EBX, 10
+	IMUL	EBX			
+	MOV		EBX, EAX
+	; load the integer string, subtract by 48 to convert from ASCII to integer number
+	MOV		EAX, 0					; empty the accumulator
+	LODSB
+	CMP		AL, 48
+	JB		_notValid
+	CMP		AL, 57
+	JA		_notValid
+	SUB		AL, 48
+	; add the prior accumulator to this number and loop to next digit
+	ADD		EAX, EBX
+	LOOP	_charLoop
+	; store into the output and end the procedure
+	MOV		[EDI], EAX
+	JMP		_end
+
+_notValid:
+	MOV		EDX, [EBP + 28]
+	CALL	WriteString
+	JMP		_getString
+
+
+
+_end:
+	POP		EBX
+	POP		EAX
+	POP		ESI
 	POP		EBP
-	RET		16
+	RET		24
 ReadVal ENDP
 
 
