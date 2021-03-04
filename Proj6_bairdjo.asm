@@ -42,7 +42,7 @@ TEST_COUNT = 10
 
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
-saved			BYTE	11 DUP(0)
+saved			BYTE	12 DUP(0)
 value			SDWORD	?
 bytesRead		DWORD	?
 greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
@@ -93,9 +93,9 @@ main ENDP
 ;	[EBP + 24] = address of the location to which the integer number will be saved
 ;	[EBP + 28] = address of the message if the input was invalid.
 ; Returns:  [++++++++++++TBU++++++++++++]
-
-; TODO - validatate that there is no overflow
-; TODO - read a + and - sign
+;
+; TODO - refactor with LOCAL variable?
+; TODO - this incorrectly reads an overflow for -2147483648
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	PUSH	EBP
@@ -103,6 +103,8 @@ ReadVal PROC
 	PUSH	ESI
 	PUSH	EAX
 	PUSH	EBX
+	PUSH	EDX
+	PUSH	1						; the sign of the integer; push to stack for temp storage
 _getString:
 	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
 	; set up the registers
@@ -111,6 +113,23 @@ _getString:
 	MOV		ESI, [EBP + 12]			; address of the integer string as source
 	MOV		EDI, [EBP + 24]			; address of destination
 	MOV		EAX, 0					; empty the accumulator
+	
+	; see if the first digit is a '+' or a '-'
+	MOV		BL, [ESI]
+	CMP		BL, 43
+	JE		_plusSymbol
+	CMP		BL, 45
+	JE		_minusSymbol
+	JMP		_charLoop
+
+_minusSymbol:
+	; for minus symbol, change the sign from +1 to -1
+	POP		EBX
+	PUSH	-1
+_plusSymbol:
+	; for both plus and minus, increment to the next digit and decrement the count
+	INC		ESI
+	DEC		ECX
 
 _charLoop:
 	; multiply accumulator by 10 and temporarily store into EBX
@@ -118,8 +137,8 @@ _charLoop:
 	IMUL	EBX
 	JO		_notValid
 	MOV		EBX, EAX
-	; load the integer string, subtract by 48 to convert from ASCII to integer number
-	MOV		EAX, 0					; empty the accumulator
+	; load the integer string digit, subtract by 48 to convert from ASCII to integer number
+	MOV		EAX, 0					; empty the upper range of the accumulator
 	LODSB
 	CMP		AL, 48
 	JB		_notValid
@@ -130,7 +149,9 @@ _charLoop:
 	ADD		EAX, EBX
 	JO		_notValid
 	LOOP	_charLoop
-	; store into the output and end the procedure
+	; multiply final value by sign and store into the output
+	POP		EBX
+	IMUL	EBX
 	MOV		[EDI], EAX
 	JMP		_end
 
@@ -140,6 +161,7 @@ _notValid:
 	JMP		_getString
 
 _end:
+	POP		EDX
 	POP		EBX
 	POP		EAX
 	POP		ESI
