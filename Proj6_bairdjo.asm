@@ -60,7 +60,8 @@ average			SDWORD	?
 displayMsg		BYTE	"You entered the following numbers:",13,10,0
 sumMsg			BYTE	"The sum of these number is: ",0
 avgMsg			BYTE	"The rounded average is: ",0
-
+goodbyeMsg		BYTE	"Thanks for playing! ",13,10,"And while the course was a great learning experience, ",
+						"I'm relieved this is the last assembly assignment :)",13,10,0
 
 .code
 main PROC
@@ -100,10 +101,13 @@ _displayArrayLoop:
 	; inrement to the next position of numArray, empty the output paramater, and repeat
 	ADD		ESI, TYPE numArray
 	; print a comma and space before the next value
+	CMP		ECX, 1
+	JE		_noSeparator
 	MOV		AL, ","
 	CALL	WriteChar
 	MOV		AL, " "
 	CALL	WriteChar
+	_noSeparator:
 	LOOP	_displayArrayLoop
 
 	; display the sum
@@ -127,6 +131,11 @@ _displayArrayLoop:
 	PUSH	OFFSET writeValString
 	PUSH	average
 	CALL	WriteVal
+	CALL	CrLf
+	CALL	CrLf
+
+	; display goodbye
+	mDisplayString OFFSET goodbyeMsg
 
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
