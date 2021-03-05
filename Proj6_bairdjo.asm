@@ -34,18 +34,6 @@ mDisplayString MACRO stringAddress:REQ
 	POP		EDX
 ENDM
 
-emptyString MACRO stringAddress:REQ, stringLength:REQ
-	PUSH	ECX
-	PUSH	EDI
-	PUSH	EAX
-	MOV		EDI, stringAddress
-	MOV		ECX, stringLength
-	MOV		AL, 0
-	REP		STOSB
-	POP		EAX
-	POP		EDI
-	POP		ECX
-ENDM
 
 ; (insert constant definitions here)
 TEST_COUNT = 5
@@ -94,7 +82,6 @@ _buildArrayLoop:
 	CALL	ReadVal
 	; increment to the next position of numArray, empty the input paramater, and repeat
 	ADD		EDI, TYPE numArray
-	emptyString OFFSET readValString, LENGTHOF readValString
 	LOOP	_buildArrayLoop
 
 
@@ -106,12 +93,12 @@ _displayArrayLoop:
 	; add the number in the current position of numArray to sum, and display it using WriteVal
 	MOV		EBX, [ESI]
 	ADD		sum, EBX
+	PUSH	LENGTHOF writeValString
 	PUSH	OFFSET writeValString
 	PUSH	[ESI]
 	CALL	WriteVal
 	; inrement to the next position of numArray, empty the output paramater, and repeat
 	ADD		ESI, TYPE numArray
-	emptyString OFFSET writeValString, LENGTHOF writeValString
 	; print a comma and space before the next value
 	MOV		AL, ","
 	CALL	WriteChar
@@ -122,7 +109,7 @@ _displayArrayLoop:
 	; display the sum
 	CALL	CrLf
 	mDisplayString OFFSET sumMsg
-	emptyString OFFSET writeValString, LENGTHOF writeValString
+	PUSH	LENGTHOF writeValString
 	PUSH	OFFSET writeValString
 	PUSH	sum
 	CALL	WriteVal
@@ -130,13 +117,13 @@ _displayArrayLoop:
 	; calculate the average
 	CALL	CrLf
 	MOV		EAX, sum
-	MOV		EDX, 0
+	CDQ
 	MOV		EBX, TEST_COUNT
-	DIV		EBX
+	IDIV	EBX
 	MOV		average, EAX
 	; display the average
 	mDisplayString OFFSET avgMsg
-	emptyString OFFSET writeValString, LENGTHOF writeValString
+	PUSH	LENGTHOF writeValString
 	PUSH	OFFSET writeValString
 	PUSH	average
 	CALL	WriteVal
@@ -163,7 +150,7 @@ main ENDP
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	; set up local variables and preserve registers
-	LOCAL	Sign:DWORD, MultipliedVal:SDWORD
+	LOCAL	sign:DWORD, priorAccumulator:SDWORD
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -177,7 +164,7 @@ _getString:
 	MOV		ECX, [ESI]				; length of string as the counter	
 	MOV		ESI, [EBP + 12]			; address of the integer string as source
 	MOV		EDI, [EBP + 24]			; address of destination (SDWORD)
-	MOV		Sign, 0					; set up the sign as 0 (for positive)
+	MOV		sign, 0					; set up the sign as 0 (for positive)
 	CLD								; iterate forwards through array
 	
 	; see if the first digit is a '+' or a '-'
@@ -193,7 +180,7 @@ _getString:
 
 _minusSymbol:
 	; if first digit is a '-' change the sign to 1 (for negative)
-	MOV		Sign, 1
+	MOV		sign, 1
 _plusSymbol:
 	; for either symbol, decrement the char count; empty accumulator to set up the loop
 	DEC		ECX
@@ -205,7 +192,7 @@ _charLoop:
 	MOV		EBX, 10
 	IMUL	EBX
 	JO		_notValid
-	MOV		MultipliedVal, EAX
+	MOV		priorAccumulator, EAX
 	; load the integer string digit, subtract by 48 to convert from ASCII to integer number
 	MOV		EAX, 0					; empty the upper range of the accumulator
 	LODSB
@@ -215,12 +202,12 @@ _charLoop:
 	JA		_notValid
 	SUB		AL, 48
 	; if sign is negative, change the value to negative
-	CMP		Sign, 0
+	CMP		sign, 0
 	JE		_positive
 	NEG		EAX	
 _positive:
 	; add the prior accumulator to this number and loop to next digit
-	ADD		EAX, MultipliedVal
+	ADD		EAX, priorAccumulator
 	JO		_notValid
 	LOOP	_charLoop
 	; store final value into the output and end
@@ -253,11 +240,12 @@ ReadVal ENDP
 ; Receives: 
 ;	[EBP + 8] = value of the number to convert to string & display
 ;	[EBP + 12] = address of the location to which the string representation will be saved
+;   [EBP + 16] = value, the length in BYTES of the location to which the string representation will be saved
 ; Returns: [++++++++++++TBU++++++++++++]
 ; ------------------------------------------------------------------------------------
 WriteVal PROC
 	; preserve registers
-	LOCAL	number:SDWORD, divisor:DWORD
+	LOCAL	number:SDWORD, sign:DWORD
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -268,51 +256,47 @@ WriteVal PROC
 	; set up initial registers
 	MOV		ESI, [EBP + 8]
 	MOV		number, ESI				; move the number into local variable
+	MOV		sign, 0					; set up the sign as 0 (for positive)
+	MOV		ECX, [EBP + 16]			; length of destination in BYTES
 	MOV		EDI, [EBP + 12]			; address of destination (BYTE string)
-	MOV		ECX, 1					; to be set by digitCountLoop (987 will have ECX of 3; 9876 will have ECX of 4)
-	MOV		divisor, 1				; to be set by digitCountLoop (987 will have divisor of 100; 9876 will have divisor of 10000)
+	ADD		EDI, ECX
+	DEC		EDI						; starting address + length - 1 = last element in string
+	STD								; set the direction flag (to increment backwards)
+
+	; put a null-terminator as the last element in destination string
+	MOV		AL, 0
+	STOSB
 
 	; if number is negative, make the first element of the string a '-', then convert number to positive
 	CMP		number, 0
-	JGE		_digitCountLoop
-	MOV		AL, "-"
-	STOSB
+	JGE		_digitToStringLoop
+	MOV		sign, 1
 	NEG		number
 
-	; figure out how many digits are in the number; this loop sets ECX and divisor (as noted above)
-_digitCountLoop:
-	; divide the number by divisor; if the quotient is a single digit, then the appropriate number of digits has been found
-	MOV		EAX, number
-	MOV		EDX, 0
-	DIV		divisor
-	CMP		EAX, 10
-	JB		_digitToStringLoop
-	; otherwise, multiply the divisor by 10, increment the counter by 1, and repeat
-	MOV		EAX, divisor
-	MOV		EBX, 10
-	MUL		EBX
-	MOV		divisor, EAX
-	INC		ECX
-	JMP		_digitCountLoop
-
 _digitToStringLoop:
-	; divide the number by the divisor, store the remainder as the next iteration's starting number
+	; divide the number by 10, store the quotient as the next iteration's starting number
 	MOV		EAX, number
-	MOV		EDX, 0
-	DIV		divisor
-	MOV		number, EDX
-	; convert the quotient into its ASCII representation and store in the array
-	ADD		AL, 48
-	STOSB
-	; divide the divisor by 10
-	MOV		EAX, divisor
 	MOV		EDX, 0
 	MOV		EBX, 10
 	DIV		EBX
-	MOV		divisor, EAX
-	LOOP	_digitToStringLoop
+	MOV		number, EAX
+	; convert the remainder into its ASCII representation and store in the array
+	MOV		EAX, EDX
+	ADD		AL, 48
+	STOSB
+	; if the quotient is zero, the last digit has been reached
+	CMP		number, 0
+	JNE		_digitToStringLoop
 
-	mDisplayString [EBP + 12]
+	; if the sign was negative, prepend a '-' symbol
+	CMP		sign, 1
+	JNE		_displayString
+	MOV		AL, "-"
+	STOSB
+
+_displayString:
+	INC		EDI
+	mDisplayString EDI
 
 _end:
 	; restore registers and return
@@ -322,7 +306,7 @@ _end:
 	POP		ECX
 	POP		EBX
 	POP		EAX
-	RET		8
+	RET		12
 WriteVal ENDP
 
 
