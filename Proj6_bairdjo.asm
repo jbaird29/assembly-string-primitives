@@ -11,41 +11,54 @@ TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 INCLUDE Irvine32.inc
 
 ; (insert macro definitions here)
-mGetString MACRO prompt:REQ, output:REQ, size:REQ, bytesRead:REQ
+mGetString MACRO promptAddress:REQ, outputAddress:REQ, size:REQ, bytesReadAddress:REQ
 	PUSH	EDX
 	PUSH	ECX
 	PUSH	EAX
-	MOV		EDX, prompt
+	MOV		EDX, promptAddress
 	CALL	WriteString
-	MOV		EDX, output
+	MOV		EDX, outputAddress
 	MOV		ECX, size
 	CALL	ReadString
-	MOV		EDI, bytesRead
+	MOV		EDI, bytesReadAddress
 	MOV		[EDI], EAX
 	POP		EAX
 	POP		ECX
 	POP		EDX
 ENDM
 
-mDisplayString MACRO string
+mDisplayString MACRO stringAddress:REQ
 	PUSH	EDX
-	MOV		EDX, string
+	MOV		EDX, stringAddress
 	CALL	WriteString
 	POP		EDX
 ENDM
 
+emptyString MACRO stringAddress:REQ, stringLength:REQ
+	PUSH	ECX
+	PUSH	EDI
+	PUSH	EAX
+	MOV		EDI, stringAddress
+	MOV		ECX, stringLength
+	MOV		AL, 0
+	REP		STOSB
+	POP		EAX
+	POP		EDI
+	POP		ECX
+ENDM
+
 ; (insert constant definitions here)
-TEST_COUNT = 10
+TEST_COUNT = 5
 ;MAX_NUM = 2147483647
 ;MIN_NUM = -2147483648
 
 
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
-stringIntInput	BYTE	20 DUP(0)			; only 12 byte necessary (10 for digits, 1 for sign, 1 for null termination)
-stringIntOutput	BYTE	20 DUP(0)			; only 12 byte necessary (10 for digits, 1 for sign, 1 for null termination)
-value			SDWORD	?
-bytesRead		DWORD	?
+readValString	BYTE	20 DUP(0)			; holds user-input (a string of digits, which will be converted into an integer)
+bytesRead		DWORD	?					; holds the number of BYTES inputted by the user
+readValInt		SDWORD	?					; holds the procedure output (an integer, which was conversion from a string of digits)
+writeValString	BYTE	20 DUP(0)			; holds the procedure output (a string of digits, which was converted from an integer)
 greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
 instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
 						"Each number needs to be small enough to fit inside a 32 bit register. ",13,10,
@@ -54,40 +67,80 @@ instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
 prompt			BYTE	"Please enter a signed intger: ",0
 invalidMsg		BYTE	"ERROR. You did not enter a signed number or your number was too big.",13,10,0
 
+sum				SDWORD	?
+average			SDWORD	?
+displayMsg		BYTE	"You entered the following numbers:",13,10,0
+sumMsg			BYTE	"The sum of these number is: ",0
+avgMsg			BYTE	"The rounded average is: ",0
+
+
 .code
 main PROC
 	; introduce the program
-	MOV		EDX, OFFSET greeting
-	CALL	WriteString
-	MOV		EDX, OFFSET instructions
-	CALL	WriteString
+	mDisplayString OFFSET greeting
+	mDisplayString OFFSET instructions
 
-	; get a number
+	; perform the test loop - get the numbers
+	MOV		ECX, LENGTHOF numArray
+	MOV		EDI, OFFSET numArray
+_buildArrayLoop:
+	; get a number via ReadVal, store into the currrent position of numArray
 	PUSH	OFFSET invalidMsg
-	PUSH	OFFSET value		; PLACEHOLDER - replace with array location
+	PUSH	EDI
 	PUSH	OFFSET bytesRead
-	PUSH	SIZEOF stringIntInput
-	PUSH	OFFSET stringIntInput
+	PUSH	LENGTHOF readValString
+	PUSH	OFFSET readValString
 	PUSH	OFFSET prompt
 	CALL	ReadVal
-	CALL	CrLf
+	; increment to the next position of numArray, empty the input paramater, and repeat
+	ADD		EDI, TYPE numArray
+	emptyString OFFSET readValString, LENGTHOF readValString
+	LOOP	_buildArrayLoop
 
-	; PLACEHOLDER - used to verify correctness of string integer --> number integer conversion
-	MOV		EAX, value
-	CALL	WriteInt
-	CALL	CrLf
 
-	; PLACEHOLDER - used to verify correctness of mDisplayString macro
-	mDisplayString OFFSET stringIntInput
-	CALL	CrLf
-	MOV		EAX, bytesRead
-	CALL	WriteDec
-	CALL	CrLF
-
-	PUSH	SIZEOF stringIntOutput
-	PUSH	OFFSET stringIntOutput
-	PUSH	value				; PLACEHOLDER - replace with array value
+	; display the numbers
+	mDisplayString OFFSET displayMsg
+	MOV		ECX, LENGTHOF numArray
+	MOV		ESI, OFFSET numArray
+_displayArrayLoop:
+	; add the number in the current position of numArray to sum, and display it using WriteVal
+	MOV		EBX, [ESI]
+	ADD		sum, EBX
+	PUSH	OFFSET writeValString
+	PUSH	[ESI]
 	CALL	WriteVal
+	; inrement to the next position of numArray, empty the output paramater, and repeat
+	ADD		ESI, TYPE numArray
+	emptyString OFFSET writeValString, LENGTHOF writeValString
+	; print a comma and space before the next value
+	MOV		AL, ","
+	CALL	WriteChar
+	MOV		AL, " "
+	CALL	WriteChar
+	LOOP	_displayArrayLoop
+
+	; display the sum
+	CALL	CrLf
+	mDisplayString OFFSET sumMsg
+	emptyString OFFSET writeValString, LENGTHOF writeValString
+	PUSH	OFFSET writeValString
+	PUSH	sum
+	CALL	WriteVal
+
+	; calculate the average
+	CALL	CrLf
+	MOV		EAX, sum
+	MOV		EDX, 0
+	MOV		EBX, TEST_COUNT
+	DIV		EBX
+	MOV		average, EAX
+	; display the average
+	mDisplayString OFFSET avgMsg
+	emptyString OFFSET writeValString, LENGTHOF writeValString
+	PUSH	OFFSET writeValString
+	PUSH	average
+	CALL	WriteVal
+
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
 
@@ -111,10 +164,12 @@ main ENDP
 ReadVal PROC
 	; set up local variables and preserve registers
 	LOCAL	Sign:DWORD, MultipliedVal:SDWORD
-	PUSH	ESI
 	PUSH	EAX
 	PUSH	EBX
+	PUSH	ECX
 	PUSH	EDX
+	PUSH	ESI
+	PUSH	EDI
 _getString:
 	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
 	; set up the registers
@@ -180,10 +235,12 @@ _notValid:
 
 _end:
 	; restore registers and return
+	POP		EDI
+	POP		ESI
 	POP		EDX
+	POP		ECX
 	POP		EBX
 	POP		EAX
-	POP		ESI
 	RET		24
 ReadVal ENDP
 
@@ -196,7 +253,6 @@ ReadVal ENDP
 ; Receives: 
 ;	[EBP + 8] = value of the number to convert to string & display
 ;	[EBP + 12] = address of the location to which the string representation will be saved
-;	[EBP + 16] = value, the number of BYTES of the string representation
 ; Returns: [++++++++++++TBU++++++++++++]
 ; ------------------------------------------------------------------------------------
 WriteVal PROC
@@ -206,8 +262,8 @@ WriteVal PROC
 	PUSH	EBX
 	PUSH	ECX
 	PUSH	EDX
-	PUSH	EDI
 	PUSH	ESI
+	PUSH	EDI
 	
 	; set up initial registers
 	MOV		ESI, [EBP + 8]
@@ -260,13 +316,13 @@ _digitToStringLoop:
 
 _end:
 	; restore registers and return
-	POP		ESI
 	POP		EDI
+	POP		ESI
 	POP		EDX
 	POP		ECX
 	POP		EBX
 	POP		EAX
-	RET		12
+	RET		8
 WriteVal ENDP
 
 
