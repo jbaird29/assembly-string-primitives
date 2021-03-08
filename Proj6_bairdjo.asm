@@ -78,12 +78,16 @@ main PROC
 	PUSH	OFFSET invalidMsgFloat
 	PUSH	OFFSET promptFloat
 	CALL	ReadFloatVal
-	MOV		EAX, digitsInputted
-	CALL	WriteDec
-	CALL	CrLf
+	;MOV		EAX, digitsInputted
+	;CALL	WriteDec
+	;CALL	CrLf
+	;FINIT
+	;FLD		floatNum
+	;CALL	WriteFloat
 	FINIT
 	FLD		floatNum
-	CALL	WriteFloat
+	PUSH	digitsInputted
+	CALL	WriteFloatVal
 
 
 	; perform the test loop - get the numbers
@@ -474,6 +478,109 @@ _end:
 	RET		16
 ReadFloatVal ENDP
 
+
+; ------------------------------------------------------------------------------------
+; Name: WriteFloatVal
+; Description: [++++++++++++TBU++++++++++++]
+; Preconditions: [++++++++++++TBU++++++++++++]
+; Postconditions: [++++++++++++TBU++++++++++++]
+; Receives: 
+;	ST(0)	  = the float number to write
+;	[EBP + 8] = the number digits in the number (e.g. 987.1259 has 7 digits)
+; Returns:  [++++++++++++TBU++++++++++++]
+; ------------------------------------------------------------------------------------
+WriteFloatVal PROC
+	LOCAL ten:DWORD, roundNormal:WORD, roundDown: WORD, exponent:DWORD, digit:DWORD, stringNumber[20]:BYTE
+	PUSH	EAX
+	PUSH	EBX
+	PUSH	ECX
+	PUSH	EDX
+	PUSH	ESI
+	PUSH	EDI
+
+
+	; set up the initial register and local variable values
+	MOV		ten, 10							; variable 10 used for FPU arithmetic
+	MOV		exponent, 0						; will hold the number of digits the dec point is shifted
+	MOV		digit, 0						; will hold the current digit in the string
+	LEA		EDI, stringNumber				; EDI holds the address of the string representation
+	CLD										; iterate forwards through array
+	MOV		ECX, [EBP + 8]					; counter holds the number of digits in the number
+	MOV		EAX, 0							; clear the accumulator
+	MOV		roundDown, 0000011101111111b	; default control word
+	MOV		roundNormal, 0000001101111111b	; control word setting RC to round down
+	FLDCW	roundDown						; set control word RC to roundDown
+
+
+	; if ST(0) is negative, add a '-' as the first character in the string and convert to positive
+	FTST									; instruction for: CMP ST(0), 0.0
+	FNSTSW	AX
+	SAHF									; copy status word into EFLAGS
+	JAE		_SciNotationLoop
+	MOV		AL, "-"
+	STOSB
+	FABS									; change float to absolute value	
+
+
+	; this code block transforms '978.875' into '9.78875' while tracking the # of decimal point moves (into 'exponent' variable)
+_SciNotationLoop:
+	; check if the float is truncated to one digit
+	FIST	digit
+	CMP		digit, 10
+	JB		_toStringLoop
+	; othwerwise divide the float by 10 and increment count of decimal point moves
+	FILD	ten
+	FDIV
+	INC		exponent
+	JMP		_SciNotationLoop
+
+
+	; at this point, the float is at ST(0) and looks like '9.78875' and exponent holds '2'
+	; this code block dumps the float into a string representation digit by digit; ECX has the number of digits (e.g. 6 for above example)
+_toStringLoop:
+	; if this is the NOT the final digit round down; if it is the final digit, round it (change control WORD to default)
+	CMP		ECX, 1
+	JNE		_roundDown
+	FLDCW	roundNormal
+	_roundDown:
+	FIST	digit
+	; add the digit to the string
+	MOV		EAX, digit
+	ADD		EAX, 48
+	STOSB
+	; subtract the digit from the float (e.g. 9.78875 - 9 = 0.78875)
+	FILD	digit
+	FSUB
+	; multiply that value by 10 to move the decimal point (e.g. 0.78875 * 10 = 7.8875)
+	FILD	ten
+	FMUL
+	; if the exponent counter == 0, add a decimal point to the string output
+	CMP		exponent, 0
+	JNE		_skipDecimal
+	MOV		AL, "."
+	STOSB
+	_skipDecimal:	
+	DEC		exponent
+	LOOP	_toStringLoop
+	
+
+	; add a null-terminator as the final string character
+	MOV		EAX, 0
+	STOSB
+	; display the string
+	LEA		ESI, stringNumber
+	mDisplayString ESI
+
+
+	; restore registers and return
+	POP		EDI
+	POP		ESI
+	POP		EDX
+	POP		ECX
+	POP		EBX
+	POP		EAX
+	RET		4
+WriteFloatVal ENDP
 
 
 
