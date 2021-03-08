@@ -44,7 +44,6 @@ TEST_COUNT = 5
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
 readValString	BYTE	20 DUP(0)			; holds user-input (a string of digits, which will be converted into an integer)
-bytesRead		DWORD	?					; holds the number of BYTES inputted by the user
 readValInt		SDWORD	?					; holds the procedure output (an integer, which was conversion from a string of digits)
 writeValString	BYTE	20 DUP(0)			; holds the procedure output (a string of digits, which was converted from an integer)
 greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
@@ -74,11 +73,8 @@ main PROC
 	MOV		EDI, OFFSET numArray
 _buildArrayLoop:
 	; get a number via ReadVal, store into the currrent position of numArray
-	PUSH	OFFSET invalidMsg
 	PUSH	EDI
-	PUSH	OFFSET bytesRead
-	PUSH	LENGTHOF readValString
-	PUSH	OFFSET readValString
+	PUSH	OFFSET invalidMsg
 	PUSH	OFFSET prompt
 	CALL	ReadVal
 	; increment to the next position of numArray, empty the input paramater, and repeat
@@ -147,11 +143,8 @@ main ENDP
 ; Postconditions: [++++++++++++TBU++++++++++++]
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
-;	[EBP + 12] = address of the location to which the integer string will be saved
-;	[EBP + 16] = value, the maximum number of BYTES which can be read
-;	[EBP + 20] = address of the count of the number of BYTES actually read
-;	[EBP + 24] = address of the location to which the integer number will be saved
-;	[EBP + 28] = address of the message if the input was invalid.
+;	[EBP + 12] = address of the message if the input was invalid.
+;	[EBP + 16] = address of the location to which the integer number will be saved
 ; Returns:  [++++++++++++TBU++++++++++++]
 ;
 ; TODO - refactor with LOCAL variable?
@@ -159,7 +152,7 @@ main ENDP
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	; set up local variables and preserve registers
-	LOCAL	sign:DWORD, priorAccumulator:SDWORD
+	LOCAL	sign:DWORD, priorAccumulator:SDWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -167,14 +160,16 @@ ReadVal PROC
 	PUSH	ESI
 	PUSH	EDI
 _getString:
-	mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
+	LEA		ESI, stringNumber
+	LEA		EDI, bytesInputted
+	MOV		maxBytes, LENGTHOF stringNumber
+	mGetString [EBP + 8], ESI, maxBytes, EDI
 	; set up the registers
-	MOV		ESI, [EBP + 20]
-	MOV		ECX, [ESI]				; length of string as the counter	
-	MOV		ESI, [EBP + 12]			; address of the integer string as source
-	MOV		EDI, [EBP + 24]			; address of destination (SDWORD)
-	MOV		sign, 0					; set up the sign as 0 (for positive)
-	CLD								; iterate forwards through array
+	MOV		ECX, [EDI]					; length of string as the counter	
+	LEA		ESI, stringNumber			; address of the integer string as source
+	MOV		EDI, [EBP + 16]				; address of destination (SDWORD)
+	MOV		sign, 0						; set up the sign as 0 (for positive)
+	CLD									; iterate forwards through array
 	
 	; see if the first digit is a '+' or a '-'
 	LODSB
@@ -225,7 +220,7 @@ _positive:
 
 _notValid:
 	; print an error message to the user and go back to get another string
-	MOV		EDX, [EBP + 28]
+	MOV		EDX, [EBP + 12]
 	CALL	WriteString
 	JMP		_getString
 
@@ -317,6 +312,30 @@ _end:
 	POP		EAX
 	RET		12
 WriteVal ENDP
+
+
+; ------------------------------------------------------------------------------------
+; Name: ReadFloatVal
+; Description: [++++++++++++TBU++++++++++++]
+; Preconditions: [++++++++++++TBU++++++++++++]
+; Postconditions: [++++++++++++TBU++++++++++++]
+; Receives: 
+;	[EBP + 8] = address of a prompt to display to the user
+;	[EBP + 12] = address of the location to which the integer string will be saved
+;	[EBP + 16] = value, the maximum number of BYTES which can be read
+;	[EBP + 20] = address of the count of the number of BYTES actually read
+;	[EBP + 24] = address of the location to which the integer number will be saved
+;	[EBP + 28] = address of the message if the input was invalid.
+; Returns:  [++++++++++++TBU++++++++++++]
+;
+; TODO - refactor with LOCAL variable?
+; TODO - this incorrectly reads an overflow for -2147483648
+; ------------------------------------------------------------------------------------
+ReadFloatVal PROC
+
+
+
+ReadFloatVal ENDP
 
 
 END main
