@@ -36,16 +36,13 @@ ENDM
 
 
 ; (insert constant definitions here)
-TEST_COUNT = 5
+TEST_COUNT = 10
 ;MAX_NUM = 2147483647
 ;MIN_NUM = -2147483648
 
 
 .data
 numArray		SDWORD	TEST_COUNT DUP(?)
-readValString	BYTE	20 DUP(0)			; holds user-input (a string of digits, which will be converted into an integer)
-readValInt		SDWORD	?					; holds the procedure output (an integer, which was conversion from a string of digits)
-writeValString	BYTE	20 DUP(0)			; holds the procedure output (a string of digits, which was converted from an integer)
 greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
 instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
 						"Each number needs to be small enough to fit inside a 32 bit register. ",13,10,
