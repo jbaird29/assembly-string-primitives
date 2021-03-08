@@ -90,8 +90,6 @@ _displayArrayLoop:
 	; add the number in the current position of numArray to sum, and display it using WriteVal
 	MOV		EBX, [ESI]
 	ADD		sum, EBX
-	PUSH	LENGTHOF writeValString
-	PUSH	OFFSET writeValString
 	PUSH	[ESI]
 	CALL	WriteVal
 	; inrement to the next position of numArray, empty the output paramater, and repeat
@@ -109,8 +107,6 @@ _displayArrayLoop:
 	; display the sum
 	CALL	CrLf
 	mDisplayString OFFSET sumMsg
-	PUSH	LENGTHOF writeValString
-	PUSH	OFFSET writeValString
 	PUSH	sum
 	CALL	WriteVal
 
@@ -123,8 +119,6 @@ _displayArrayLoop:
 	MOV		average, EAX
 	; display the average
 	mDisplayString OFFSET avgMsg
-	PUSH	LENGTHOF writeValString
-	PUSH	OFFSET writeValString
 	PUSH	average
 	CALL	WriteVal
 	CALL	CrLf
@@ -232,7 +226,7 @@ _end:
 	POP		ECX
 	POP		EBX
 	POP		EAX
-	RET		24
+	RET		12
 ReadVal ENDP
 
 
@@ -243,13 +237,11 @@ ReadVal ENDP
 ; Postconditions: [++++++++++++TBU++++++++++++]
 ; Receives: 
 ;	[EBP + 8] = value of the number to convert to string & display
-;	[EBP + 12] = address of the location to which the string representation will be saved
-;   [EBP + 16] = value, the length in BYTES of the location to which the string representation will be saved
 ; Returns: [++++++++++++TBU++++++++++++]
 ; ------------------------------------------------------------------------------------
 WriteVal PROC
 	; preserve registers
-	LOCAL	number:SDWORD, sign:DWORD
+	LOCAL	number:SDWORD, sign:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -259,10 +251,10 @@ WriteVal PROC
 	
 	; set up initial registers
 	MOV		ESI, [EBP + 8]
-	MOV		number, ESI				; move the number into local variable
-	MOV		sign, 0					; set up the sign as 0 (for positive)
-	MOV		ECX, [EBP + 16]			; length of destination in BYTES
-	MOV		EDI, [EBP + 12]			; address of destination (BYTE string)
+	MOV		number, ESI					; move the number into local variable
+	MOV		sign, 0						; set up the sign as 0 (for positive)
+	MOV		ECX, LENGTHOF stringNumber	; length of destination in BYTES
+	LEA		EDI, stringNumber			; address of destination (BYTE string)
 	ADD		EDI, ECX
 	DEC		EDI						; starting address + length - 1 = last element in string
 	STD								; set the direction flag (to increment backwards)
@@ -310,7 +302,7 @@ _end:
 	POP		ECX
 	POP		EBX
 	POP		EAX
-	RET		12
+	RET		4
 WriteVal ENDP
 
 
