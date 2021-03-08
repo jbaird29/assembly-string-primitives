@@ -59,11 +59,27 @@ avgMsg			BYTE	"The rounded average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,"And while the course was a great learning experience, ",
 						"I'm relieved this is the last assembly assignment :)",13,10,0
 
+; EXTRA CREDIT variables
+floatNum		REAL10	?
+promptFloat		BYTE	"Please enter a floating point number: ",0
+invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
+
+
 .code
 main PROC
 	; introduce the program
 	mDisplayString OFFSET greeting
 	mDisplayString OFFSET instructions
+	
+	; TESTING THE FLOAT PROCEDURE
+	PUSH	OFFSET floatNum
+	PUSH	OFFSET invalidMsgFloat
+	PUSH	OFFSET promptFloat
+	CALL	ReadFloatVal
+	FINIT
+	FLD		floatNum
+	CALL	WriteFloat
+
 
 	; perform the test loop - get the numbers
 	MOV		ECX, LENGTHOF numArray
@@ -114,6 +130,7 @@ _displayArrayLoop:
 	MOV		EBX, TEST_COUNT
 	IDIV	EBX
 	MOV		average, EAX
+
 	; display the average
 	mDisplayString OFFSET avgMsg
 	PUSH	average
@@ -138,8 +155,6 @@ main ENDP
 ;	[EBP + 16] = address of the location to which the integer number will be saved
 ; Returns:  [++++++++++++TBU++++++++++++]
 ;
-; TODO - refactor with LOCAL variable?
-; TODO - this incorrectly reads an overflow for -2147483648
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	; set up local variables and preserve registers
@@ -156,7 +171,7 @@ _getString:
 	MOV		maxBytes, LENGTHOF stringNumber
 	mGetString [EBP + 8], ESI, maxBytes, EDI
 	; set up the registers
-	MOV		ECX, [EDI]					; length of string as the counter	
+	MOV		ECX, bytesInputted			; length of string as the counter	
 	LEA		ESI, stringNumber			; address of the integer string as source
 	MOV		EDI, [EBP + 16]				; address of destination (SDWORD)
 	MOV		sign, 0						; set up the sign as 0 (for positive)
@@ -310,21 +325,140 @@ WriteVal ENDP
 ; Postconditions: [++++++++++++TBU++++++++++++]
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
-;	[EBP + 12] = address of the location to which the integer string will be saved
-;	[EBP + 16] = value, the maximum number of BYTES which can be read
-;	[EBP + 20] = address of the count of the number of BYTES actually read
-;	[EBP + 24] = address of the location to which the integer number will be saved
-;	[EBP + 28] = address of the message if the input was invalid.
+;	[EBP + 12] = address of the message if the input was invalid.
+;	[EBP + 16] = address of the location to which the integer number will be saved
 ; Returns:  [++++++++++++TBU++++++++++++]
 ;
-; TODO - refactor with LOCAL variable?
-; TODO - this incorrectly reads an overflow for -2147483648
 ; ------------------------------------------------------------------------------------
 ReadFloatVal PROC
+	; set up local variables and preserve registers
+	LOCAL	sign:SDWORD, zero:DWORD, ten:DWORD, digit:DWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
+	PUSH	EAX
+	PUSH	EBX
+	PUSH	ECX
+	PUSH	EDX
+	PUSH	ESI
+	PUSH	EDI
+_getString:
+	LEA		ESI, stringNumber
+	LEA		EDI, bytesInputted
+	MOV		maxBytes, LENGTHOF stringNumber
+	mGetString [EBP + 8], ESI, maxBytes, EDI
+	; set up the registers
+	MOV		ECX, bytesInputted			; length of string as the counter	
+	LEA		ESI, stringNumber			; address of the integer string as source
+	MOV		EDI, [EBP + 16]				; address of destination (REAL10)
+	MOV		sign, 1						; set up the sign as 1 (for positive)
+	MOV		ten, 10						; put the value ten into a memory variable for FPU calcs
+	MOV		zero, 0						; put the value zero into a memory variable for FPU calcs
+	FINIT								; initialize the FPU
+	CLD									; iterate forwards through array
+	
+	; see if the first digit is a '+' or a '-'
+	LODSB
+	CMP		AL, 43
+	JE		_plusSymbol
+	CMP		AL, 45
+	JE		_minusSymbol
+	; if no symbol, decrement ESI in order to re-evaluate that digit again; empty accumulator to set up the loop
+	DEC		ESI
+	FILD	zero
+	JMP		_intLoop
+
+_minusSymbol:
+	; if first digit is a '-' change the sign to 1 (for negative)
+	MOV		sign, -1
+_plusSymbol:
+	; for either symbol, decrement the char count; empty accumulator to set up the loop
+	DEC		ECX
+	FILD	zero
+	JMP		_intLoop
 
 
+_intLoop:
+	; get the next digit in the string; validate & convert from ASCII to integer number
+	MOV		EAX, 0
+	LODSB
+	CMP		AL, 46
+	JE		_decimalPoint
+	CMP		AL, 48
+	JB		_notValid
+	CMP		AL, 57
+	JA		_notValid
+	SUB		AL, 48
+	; multiply the prior value on the stack by 10
+	FILD	ten
+	FMUL
+	; load the digit onto the FPU stack
+	MOV		digit, EAX
+	FILD	digit
+	; multiply the value by the sign (either 1 or -1)
+	FILD	sign
+	FMUL
+	; add this value to the prior value on the stack and loop to next digit
+	FADD
+	LOOP	_intLoop
 
+	; if all digits are read and no decimal point was reached, store final value into the output and end
+	FSTP	REAL10 PTR [EDI]
+	JMP		_end
+
+
+_decimalPoint:
+	; start building the fractional part of the number
+	DEC		ECX					; decrement ECX to account for the decimal point character
+	LEA		ESI, stringNumber	; change the address to the end of the string
+	ADD		ESI, bytesInputted
+	DEC		ESI
+	STD							; set the direction flag to increment backwards
+	FILD	zero				; ST(1) holds the 'integer part'; initialize 'fractional part' at ST(0) as the value zero
+
+_floatLoop:
+	; divide the prior value on the FPU stack by 10
+	FILD	ten
+	FDIV
+	; get the next digit in the string; validate & convert from ASCII to integer number
+	MOV		EAX, 0
+	LODSB
+	CMP		AL, 48
+	JB		_notValid
+	CMP		AL, 57
+	JA		_notValid
+	SUB		AL, 48
+	; load the value onto the FPU stack and divide it by 10
+	MOV		digit, EAX
+	FILD	digit
+	FILD	ten
+	FDIV
+	; multiply the value by the sign (either 1 or -1)
+	FILD	sign
+	FMUL
+	; add this value to the prior value on the stack and loop to next digit
+	FADD
+	LOOP	_floatLoop
+
+	; upon completion of all the 'fractional part' digits, add the integer part at ST(1) to the fractional part at ST(0)
+	FADD
+	FSTP	REAL10 PTR [EDI]
+	JMP		_end
+
+
+_notValid:
+	; print an error message to the user and go back to get another string
+	MOV		EDX, [EBP + 12]
+	CALL	WriteString
+	JMP		_getString
+
+
+_end:
+	; restore registers and return
+	POP		EDI
+	POP		ESI
+	POP		EDX
+	POP		ECX
+	POP		EBX
+	POP		EAX
+	RET		12
 ReadFloatVal ENDP
-
 
 END main
