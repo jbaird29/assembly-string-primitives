@@ -61,6 +61,7 @@ goodbyeMsg		BYTE	"Thanks for playing! ",13,10,"And while the course was a great 
 
 ; EXTRA CREDIT variables
 floatNum		REAL10	?
+digitsInputted	DWORD	0
 promptFloat		BYTE	"Please enter a floating point number: ",0
 invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
 
@@ -72,10 +73,14 @@ main PROC
 	mDisplayString OFFSET instructions
 	
 	; TESTING THE FLOAT PROCEDURE
+	PUSH	OFFSET digitsInputted
 	PUSH	OFFSET floatNum
 	PUSH	OFFSET invalidMsgFloat
 	PUSH	OFFSET promptFloat
 	CALL	ReadFloatVal
+	MOV		EAX, digitsInputted
+	CALL	WriteDec
+	CALL	CrLf
 	FINIT
 	FLD		floatNum
 	CALL	WriteFloat
@@ -326,9 +331,9 @@ WriteVal ENDP
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
 ;	[EBP + 12] = address of the message if the input was invalid.
-;	[EBP + 16] = address of the location to which the integer number will be saved
+;	[EBP + 16] = address of the location to which the flot number will be saved
+;	[EBP + 20] = address of the location to which the number of digits inputted will be saved
 ; Returns:  [++++++++++++TBU++++++++++++]
-;
 ; ------------------------------------------------------------------------------------
 ReadFloatVal PROC
 	; set up local variables and preserve registers
@@ -345,6 +350,8 @@ _getString:
 	MOV		maxBytes, LENGTHOF stringNumber
 	mGetString [EBP + 8], ESI, maxBytes, EDI
 	; set up the registers
+	MOV		EDX, [EBP + 20]
+	MOV		DWORD PTR [EDX], 0			; holds a count of the number of digits inputted (needed for WriteFloatVal)
 	MOV		ECX, bytesInputted			; length of string as the counter	
 	LEA		ESI, stringNumber			; address of the integer string as source
 	MOV		EDI, [EBP + 16]				; address of destination (REAL10)
@@ -386,6 +393,9 @@ _intLoop:
 	CMP		AL, 57
 	JA		_notValid
 	SUB		AL, 48
+	; increment the count of digits inputted
+	MOV		EDX, [EBP + 20]
+	INC		DWORD PTR [EDX]
 	; multiply the prior value on the stack by 10
 	FILD	ten
 	FMUL
@@ -425,6 +435,9 @@ _floatLoop:
 	CMP		AL, 57
 	JA		_notValid
 	SUB		AL, 48
+	; increment the count of digits inputted
+	MOV		EDX, [EBP + 20]
+	INC		DWORD PTR [EDX]
 	; load the value onto the FPU stack and divide it by 10
 	MOV		digit, EAX
 	FILD	digit
@@ -458,7 +471,10 @@ _end:
 	POP		ECX
 	POP		EBX
 	POP		EAX
-	RET		12
+	RET		16
 ReadFloatVal ENDP
+
+
+
 
 END main
