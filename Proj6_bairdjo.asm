@@ -36,7 +36,7 @@ ENDM
 
 
 ; (insert constant definitions here)
-TEST_COUNT = 10
+TEST_COUNT = 3
 ;MAX_NUM = 2147483647
 ;MIN_NUM = -2147483648
 
@@ -56,41 +56,33 @@ average			SDWORD	?
 displayMsg		BYTE	"You entered the following numbers:",13,10,0
 sumMsg			BYTE	"The sum of these number is: ",0
 avgMsg			BYTE	"The rounded average is: ",0
-goodbyeMsg		BYTE	"Thanks for playing! ",13,10,"And while the course was a great learning experience, ",
-						"I'm relieved this is the last assembly assignment :)",13,10,0
+goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 
 ; EXTRA CREDIT variables
-floatNum		REAL10	?
-digitsInputted	DWORD	0
+floatArray		REAL10	TEST_COUNT DUP(?)
+digitCountArray	DWORD	TEST_COUNT DUP(?)
+floatSum		REAL10	?
+floatAvg		REAL10	?
+testCount		DWORD	TEST_COUNT
 promptFloat		BYTE	"Please enter a floating point number: ",0
 invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
 
 
 .code
 main PROC
-	; introduce the program
+; ----------------------------------------------------------------------------------------------------
+; Introduction
+;    Display introduction messages
+; ----------------------------------------------------------------------------------------------------
 	mDisplayString OFFSET greeting
 	mDisplayString OFFSET instructions
 	
-	; TESTING THE FLOAT PROCEDURE
-	PUSH	OFFSET digitsInputted
-	PUSH	OFFSET floatNum
-	PUSH	OFFSET invalidMsgFloat
-	PUSH	OFFSET promptFloat
-	CALL	ReadFloatVal
-	;MOV		EAX, digitsInputted
-	;CALL	WriteDec
-	;CALL	CrLf
-	;FINIT
-	;FLD		floatNum
-	;CALL	WriteFloat
-	FINIT
-	FLD		floatNum
-	PUSH	digitsInputted
-	CALL	WriteFloatVal
 
 
-	; perform the test loop - get the numbers
+; ----------------------------------------------------------------------------------------------------
+; ReadVal
+;    Test loop - build an array of numbers
+; ----------------------------------------------------------------------------------------------------
 	MOV		ECX, LENGTHOF numArray
 	MOV		EDI, OFFSET numArray
 _buildArrayLoop:
@@ -99,24 +91,24 @@ _buildArrayLoop:
 	PUSH	OFFSET invalidMsg
 	PUSH	OFFSET prompt
 	CALL	ReadVal
-	; increment to the next position of numArray, empty the input paramater, and repeat
+	; increment to the next position of numArray
 	ADD		EDI, TYPE numArray
 	LOOP	_buildArrayLoop
 
 
-	; display the numbers
+; ----------------------------------------------------------------------------------------------------
+; WriteVal
+;    Test loop - display the array of numbers 
+; ----------------------------------------------------------------------------------------------------
 	mDisplayString OFFSET displayMsg
 	MOV		ECX, LENGTHOF numArray
 	MOV		ESI, OFFSET numArray
 _displayArrayLoop:
-	; add the number in the current position of numArray to sum, and display it using WriteVal
-	MOV		EBX, [ESI]
-	ADD		sum, EBX
+	; display the current element of numArray
 	PUSH	[ESI]
 	CALL	WriteVal
-	; inrement to the next position of numArray, empty the output paramater, and repeat
 	ADD		ESI, TYPE numArray
-	; print a comma and space before the next value
+	; print a comma and space, unless it is the last element in the array
 	CMP		ECX, 1
 	JE		_noSeparator
 	MOV		AL, ","
@@ -125,21 +117,33 @@ _displayArrayLoop:
 	CALL	WriteChar
 	_noSeparator:
 	LOOP	_displayArrayLoop
-
-	; display the sum
 	CALL	CrLf
+
+
+; ----------------------------------------------------------------------------------------------------
+; Integer Sum / Average
+;    Calculate and display the sum and average of the integers
+; ----------------------------------------------------------------------------------------------------
+	MOV		ECX, LENGTHOF numArray
+	MOV		ESI, OFFSET numArray
+	MOV		EAX, 0
+	; calculate the sum
+_calculateSumLoop:
+	ADD		EAX, [ESI]
+	ADD		ESI, TYPE numArray
+	LOOP	_calculateSumLoop
+	MOV		sum, EAX
+	; display the sum
 	mDisplayString OFFSET sumMsg
 	PUSH	sum
 	CALL	WriteVal
-
-	; calculate the average
 	CALL	CrLf
+	; calculate the average
 	MOV		EAX, sum
 	CDQ
 	MOV		EBX, TEST_COUNT
 	IDIV	EBX
 	MOV		average, EAX
-
 	; display the average
 	mDisplayString OFFSET avgMsg
 	PUSH	average
@@ -147,11 +151,116 @@ _displayArrayLoop:
 	CALL	CrLf
 	CALL	CrLf
 
-	; display goodbye
+
+; ----------------------------------------------------------------------------------------------------
+; ReadFloatVal
+;    Test loop - build an array of floating point numbers
+; ----------------------------------------------------------------------------------------------------
+	MOV		ECX, LENGTHOF floatArray
+	MOV		EDI, OFFSET floatArray
+	MOV		EDX, OFFSET digitCountArray
+_buildFloatArrayLoop:
+	; get a number via ReadFloatVal, store into the currrent position of floatArray
+	PUSH	EDX
+	PUSH	EDI
+	PUSH	OFFSET invalidMsgFloat
+	PUSH	OFFSET promptFloat
+	CALL	ReadFloatVal
+	; increment to the next position of numArray and digitCountArray
+	ADD		EDI, TYPE floatArray
+	ADD		EDX, TYPE digitCountArray
+	LOOP	_buildFloatArrayLoop
+
+
+; ----------------------------------------------------------------------------------------------------
+; WriteFloatVal
+;    Test loop - display the array of float numbers
+; ----------------------------------------------------------------------------------------------------
+	mDisplayString OFFSET displayMsg
+	MOV		ECX, LENGTHOF floatArray
+	MOV		ESI, OFFSET floatArray
+	MOV		EDX, OFFSET digitCountArray
+_displayFloatArrayLoop:
+	; display the float in the current position of floatArray
+	FINIT
+	FLD		REAL10 PTR [ESI]
+	PUSH	DWORD PTR [EDX]
+	CALL	WriteFloatVal
+	; inrement to the next position of numArray
+	ADD		ESI, TYPE floatArray
+	ADD		EDX, TYPE digitCountArray
+	; print a comma and space before the next value
+	CMP		ECX, 1
+	JE		_skipSeparator
+	MOV		AL, ","
+	CALL	WriteChar
+	MOV		AL, " "
+	CALL	WriteChar
+	_skipSeparator:
+	LOOP	_displayFloatArrayLoop
+	CALL	CrLf
+
+
+; ----------------------------------------------------------------------------------------------------
+; Floats Sum / Aveage
+;    Calculate and display the sum and average of the numbers in the array
+; ----------------------------------------------------------------------------------------------------
+	; calculate the average of the floatArray elemenets
+	MOV		ECX, LENGTHOF floatArray
+	MOV		ESI, OFFSET floatArray
+	FINIT
+	FLDZ										; initialize FPU stack and set ST(0) to zero
+_calcFloatSumLoop:
+	; create a running of of floatArray elements stored at ST(0)
+	FLD		REAL10 PTR [ESI]
+	FADD
+	ADD		ESI, TYPE floatArray
+	LOOP	_calcFloatSumLoop
+	; store the sum into memory; divide by count and store the average into memory
+	FSTP	floatSum
+	FLD		floatSum
+	FILD	testCount
+	FDIV
+	FSTP	floatAvg
+
+	; calculate the maximum number of digits to display; store into EAX
+	MOV		ECX, LENGTHOF digitCountArray
+	MOV		ESI, OFFSET digitCountArray
+	MOV		EAX, 0
+_calcMaxDigitsLoop:
+	CMP		[ESI], EAX
+	JB		_notMax
+	MOV		EAX, [ESI]
+	_notMax:
+	ADD		ESI, TYPE digitCountArray
+	LOOP	_calcMaxDigitsLoop
+
+	; display the sum
+	mDisplayString OFFSET sumMsg
+	FINIT
+	FLD		floatSum
+	PUSH	EAX									; push the 'max digits' calculated above
+	CALL	WriteFloatVal
+	CALL	CrLf
+	; display the average
+	mDisplayString OFFSET avgMsg
+	FINIT
+	FLD		floatAvg
+	PUSH	EAX									; push the 'max digits' calculated above
+	CALL	WriteFloatVal
+	CALL	CrLf
+	CALL	CrLf
+
+
+; ----------------------------------------------------------------------------------------------------
+; Goodbye
+;    Display goodbye message
+; ----------------------------------------------------------------------------------------------------
 	mDisplayString OFFSET goodbyeMsg
 
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
+
 
 ; ------------------------------------------------------------------------------------
 ; Name: ReadVal
@@ -341,7 +450,7 @@ WriteVal ENDP
 ; ------------------------------------------------------------------------------------
 ReadFloatVal PROC
 	; set up local variables and preserve registers
-	LOCAL	sign:SDWORD, zero:DWORD, ten:DWORD, digit:DWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
+	LOCAL	sign:SDWORD, noLeadingZero:DWORD, ten:DWORD, digit:DWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -361,7 +470,7 @@ _getString:
 	MOV		EDI, [EBP + 16]				; address of destination (REAL10)
 	MOV		sign, 1						; set up the sign as 1 (for positive)
 	MOV		ten, 10						; put the value ten into a memory variable for FPU calcs
-	MOV		zero, 0						; put the value zero into a memory variable for FPU calcs
+	MOV		noLeadingZero, 0			; will be used to test for leading 0's in the string (i.e.  -00908.875)
 	FINIT								; initialize the FPU
 	CLD									; iterate forwards through array
 	
@@ -371,18 +480,18 @@ _getString:
 	JE		_plusSymbol
 	CMP		AL, 45
 	JE		_minusSymbol
-	; if no symbol, decrement ESI in order to re-evaluate that digit again; empty accumulator to set up the loop
+	; if no symbol, decrement ESI in order to re-evaluate that digit again; set ST(0) as zero
 	DEC		ESI
-	FILD	zero
+	FLDZ
 	JMP		_intLoop
 
 _minusSymbol:
 	; if first digit is a '-' change the sign to 1 (for negative)
 	MOV		sign, -1
 _plusSymbol:
-	; for either symbol, decrement the char count; empty accumulator to set up the loop
+	; for either symbol, decrement the char count; set ST(0) as zero
 	DEC		ECX
-	FILD	zero
+	FLDZ
 	JMP		_intLoop
 
 
@@ -397,9 +506,19 @@ _intLoop:
 	CMP		AL, 57
 	JA		_notValid
 	SUB		AL, 48
+	; if the digit is not a zero, increment the digit count
+	CMP		AL, 0
+	JNE		_incrementDigitCount
+	; if the digit is not a leading digit, increment the digit count
+	CMP		noLeadingZero, 0
+	JNE		_incrementDigitCount
+	JMP		_skipIncrementDigitCount
+	_incrementDigitCount:
 	; increment the count of digits inputted
+	MOV		noLeadingZero, 1
 	MOV		EDX, [EBP + 20]
 	INC		DWORD PTR [EDX]
+	_skipIncrementDigitCount:
 	; multiply the prior value on the stack by 10
 	FILD	ten
 	FMUL
@@ -425,7 +544,7 @@ _decimalPoint:
 	ADD		ESI, bytesInputted
 	DEC		ESI
 	STD							; set the direction flag to increment backwards
-	FILD	zero				; ST(1) holds the 'integer part'; initialize 'fractional part' at ST(0) as the value zero
+	FLDZ						; ST(1) holds the 'integer part'; initialize 'fractional part' at ST(0) as the value zero
 
 _floatLoop:
 	; divide the prior value on the FPU stack by 10
