@@ -84,7 +84,7 @@ main PROC
 
 ; ----------------------------------------------------------------------------------------------------
 ; ReadVal
-;    Test loop - build an array of numbers
+;    Test loop - build an array of numbers; dispaly line number and running sum
 ; ----------------------------------------------------------------------------------------------------
 	MOV		ECX, LENGTHOF numArray
 	MOV		EDI, OFFSET numArray
@@ -144,14 +144,7 @@ _displayArrayLoop:
 	MOV		ECX, LENGTHOF numArray
 	MOV		ESI, OFFSET numArray
 	MOV		EAX, 0
-	MOV		sum, 0
 	MOV		avg, 0
-	; calculate the sum
-_calculateSumLoop:
-	ADD		EAX, [ESI]
-	ADD		ESI, TYPE numArray
-	LOOP	_calculateSumLoop
-	MOV		sum, EAX
 	; display the sum
 	mDisplayString OFFSET sumMsg
 	PUSH	sum
@@ -178,18 +171,41 @@ _calculateSumLoop:
 	MOV		ECX, LENGTHOF floatArray
 	MOV		EDI, OFFSET floatArray
 	MOV		EDX, OFFSET digitCountArray
+	MOV		EBX, 0								; EBX will hold the # of decimal point digits to display
+	MOV		lineNum, 1
+	FINIT
+	FLDZ
 _buildFloatArrayLoop:
+	; print the line number
+	PUSH	lineNum
+	CALL	WriteVal
+	MOV		AL, "-"
+	CALL	WriteChar
 	; get a number via ReadFloatVal, store into the currrent position of floatArray
 	PUSH	EDX
 	PUSH	EDI
 	PUSH	OFFSET invalidMsgFloat
 	PUSH	OFFSET promptFloat
 	CALL	ReadFloatVal
+	; see if the number of digits (after the decimal point) should be increased
+	CMP		[EDX], EBX
+	JB		_skipUpdateMax
+	MOV		EBX, [EDX]
+	_skipUpdateMax:
+	; add this value to the prior value on the stack; print it using WriteFloatVal
+	mDisplayString OFFSET currSumMsg
+	FLD		REAL10 PTR [EDI]
+	FADD
+	PUSH	EBX
+	CALL	WriteFloatVal
+	CALL	CrLf
 	; increment to the next position of numArray and digitCountArray
 	ADD		EDI, TYPE floatArray
 	ADD		EDX, TYPE digitCountArray
+	INC		lineNum
 	LOOP	_buildFloatArrayLoop
-
+	; upon completion of the loop, store the current sum into memory
+	FSTP	floatSum
 
 ; ----------------------------------------------------------------------------------------------------
 ; WriteFloatVal
@@ -221,51 +237,25 @@ _displayFloatArrayLoop:
 
 
 ; ----------------------------------------------------------------------------------------------------
-; Floats Sum / Aveage
+; Float Sum / Aveage
 ;    Calculate and display the sum and average of the numbers in the array
 ; ----------------------------------------------------------------------------------------------------
 	; calculate the average of the floatArray elemenets
-	MOV		ECX, LENGTHOF floatArray
-	MOV		ESI, OFFSET floatArray
 	FINIT
-	FLDZ										; initialize FPU stack and set ST(0) to zero
-_calcFloatSumLoop:
-	; create a running of of floatArray elements stored at ST(0)
-	FLD		REAL10 PTR [ESI]
-	FADD
-	ADD		ESI, TYPE floatArray
-	LOOP	_calcFloatSumLoop
-	; store the sum into memory; divide by count and store the average into memory
-	FSTP	floatSum
 	FLD		floatSum
 	FILD	testCount
 	FDIV
 	FSTP	floatAvg
-
-	; calculate the maximum number of digits to display; store into EAX
-	MOV		ECX, LENGTHOF digitCountArray
-	MOV		ESI, OFFSET digitCountArray
-	MOV		EAX, 0
-_calcMaxDigitsLoop:
-	CMP		[ESI], EAX
-	JB		_notMax
-	MOV		EAX, [ESI]
-	_notMax:
-	ADD		ESI, TYPE digitCountArray
-	LOOP	_calcMaxDigitsLoop
-
 	; display the sum
 	mDisplayString OFFSET sumMsg
-	FINIT
 	FLD		floatSum
-	PUSH	EAX									; push the 'max digits' calculated above
+	PUSH	EBX									; push the 'max digits' calculated above
 	CALL	WriteFloatVal
 	CALL	CrLf
 	; display the average
 	mDisplayString OFFSET avgMsg
-	FINIT
 	FLD		floatAvg
-	PUSH	EAX									; push the 'max digits' calculated above
+	PUSH	EBX									; push the 'max digits' calculated above
 	CALL	WriteFloatVal
 	CALL	CrLf
 	CALL	CrLf
@@ -457,7 +447,7 @@ WriteVal ENDP
 ; ------------------------------------------------------------------------------------
 ; Name: ReadFloatVal
 ; Description: prompts the user to enter a floating point number, converts it to REAL10, and stores in memory
-; Preconditions: inputted number must fit in REAL10
+; Preconditions: FINIT must be initialized prior to calling ReadFloatVal; inputted number must fit in REAL10
 ; Postconditions: prompt and/or error message is printed to the console
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
@@ -489,7 +479,7 @@ _getString:
 	MOV		isLeadingZero, 1			; set up a condition check for trailing zeros; this helps turn '9.9000' into '9.9' 
 	MOV		sign, 1						; set up the sign as 1 (for positive)
 	MOV		ten, 10						; put the value ten into a memory variable for FPU calcs
-	FINIT								; initialize the FPU
+	FLDZ								; set ST(0) to zero
 	CLD									; iterate forwards through array
 	
 	; see if the first digit is a '+' or a '-'
@@ -500,7 +490,6 @@ _getString:
 	JE		_minusSymbol
 	; if no symbol, decrement ESI in order to re-evaluate that digit again; set ST(0) as zero
 	DEC		ESI
-	FLDZ
 	JMP		_intLoop
 
 _minusSymbol:
@@ -509,7 +498,6 @@ _minusSymbol:
 _plusSymbol:
 	; for either symbol, decrement the char count; set ST(0) as zero
 	DEC		ECX
-	FLDZ
 	JMP		_intLoop
 
 
@@ -615,7 +603,7 @@ ReadFloatVal ENDP
 ; ------------------------------------------------------------------------------------
 ; Name: WriteFloatVal
 ; Description: Given a number in REAL10, converts the number to a string and prints to console
-; Preconditions: the number must be in REAL10
+; Preconditions: FPU stack is initialized with the given number at ST(0) in REAL10
 ; Postconditions: number is printed to the console
 ; Receives: 
 ;	ST(0)	  = the float number to write
@@ -623,7 +611,7 @@ ReadFloatVal ENDP
 ; Returns:  none
 ; ------------------------------------------------------------------------------------
 WriteFloatVal PROC
-	LOCAL ten:DWORD, roundNormal:WORD, roundDown:WORD, exponent:DWORD, digit:DWORD, stringNumber[20]:BYTE
+	LOCAL ten:DWORD, roundNormal:WORD, roundDown:WORD, exponent:DWORD, digit:DWORD, stringNumber[20]:BYTE, remainder:REAL10
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -633,6 +621,7 @@ WriteFloatVal PROC
 
 
 	; set up the initial register and local variable values
+	FLD		ST(0)							; create a copy of the number so as to not overwrite it
 	MOV		ten, 10							; variable 10 used for FPU arithmetic
 	MOV		exponent, 0						; will hold the number of digits the dec point is shifted
 	MOV		digit, 0						; will hold the current digit in the string
@@ -717,6 +706,7 @@ _floatToStringLoop:
 	
 
 	; add a null-terminator as the final string character
+	FSTP	remainder
 	MOV		EAX, 0
 	STOSB
 	; display the string
