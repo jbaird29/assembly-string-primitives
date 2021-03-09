@@ -52,13 +52,17 @@ prompt			BYTE	"Please enter a signed intger: ",0
 invalidMsg		BYTE	"ERROR. You did not enter a signed number or your number was too big.",13,10,0
 
 sum				SDWORD	?
-average			SDWORD	?
+avg				SDWORD	?
 displayMsg		BYTE	"You entered the following numbers:",13,10,0
 sumMsg			BYTE	"The sum of these number is: ",0
 avgMsg			BYTE	"The rounded average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 
-; EXTRA CREDIT variables
+; EXTRA CREDIT #1 variables
+lineNum			DWORD	?
+currSumMsg		BYTE	"The current sum is: ",0
+
+; EXTRA CREDIT #2 variables
 floatArray		REAL10	TEST_COUNT DUP(?)
 digitCountArray	DWORD	TEST_COUNT DUP(?)
 floatSum		REAL10	?
@@ -78,21 +82,34 @@ main PROC
 	mDisplayString OFFSET instructions
 	
 
-
 ; ----------------------------------------------------------------------------------------------------
 ; ReadVal
 ;    Test loop - build an array of numbers
 ; ----------------------------------------------------------------------------------------------------
 	MOV		ECX, LENGTHOF numArray
 	MOV		EDI, OFFSET numArray
+	MOV		lineNum, 1
 _buildArrayLoop:
+	; print the line number
+	PUSH	lineNum
+	CALL	WriteVal
+	MOV		AL, "-"
+	CALL	WriteChar
 	; get a number via ReadVal, store into the currrent position of numArray
 	PUSH	EDI
 	PUSH	OFFSET invalidMsg
 	PUSH	OFFSET prompt
 	CALL	ReadVal
+	; add the outputted number to sum
+	MOV		EAX, [EDI]
+	ADD		sum, EAX
+	mDisplayString OFFSET currSumMsg
+	PUSH	sum
+	CALL	WriteVal
+	CALL	CrLf
 	; increment to the next position of numArray
 	ADD		EDI, TYPE numArray
+	INC		lineNum
 	LOOP	_buildArrayLoop
 
 
@@ -127,6 +144,8 @@ _displayArrayLoop:
 	MOV		ECX, LENGTHOF numArray
 	MOV		ESI, OFFSET numArray
 	MOV		EAX, 0
+	MOV		sum, 0
+	MOV		avg, 0
 	; calculate the sum
 _calculateSumLoop:
 	ADD		EAX, [ESI]
@@ -143,10 +162,10 @@ _calculateSumLoop:
 	CDQ
 	MOV		EBX, TEST_COUNT
 	IDIV	EBX
-	MOV		average, EAX
+	MOV		avg, EAX
 	; display the average
 	mDisplayString OFFSET avgMsg
-	PUSH	average
+	PUSH	avg
 	CALL	WriteVal
 	CALL	CrLf
 	CALL	CrLf
@@ -264,15 +283,14 @@ main ENDP
 
 ; ------------------------------------------------------------------------------------
 ; Name: ReadVal
-; Description: [++++++++++++TBU++++++++++++]
-; Preconditions: [++++++++++++TBU++++++++++++]
-; Postconditions: [++++++++++++TBU++++++++++++]
+; Description: Prompts the user to enter a signed number, and stores that number into a memory variable
+; Preconditions: the inputted number must fit into a SDWORD
+; Postconditions: prompt and/or error message is printed to the console
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
 ;	[EBP + 12] = address of the message if the input was invalid.
 ;	[EBP + 16] = address of the location to which the integer number will be saved
-; Returns:  [++++++++++++TBU++++++++++++]
-;
+; Returns:  signed number is saved into the memory address
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	; set up local variables and preserve registers
@@ -362,12 +380,12 @@ ReadVal ENDP
 
 ; ------------------------------------------------------------------------------------
 ; Name: WriteVal
-; Description: [++++++++++++TBU++++++++++++]
-; Preconditions: [++++++++++++TBU++++++++++++] [the address of the location is long enough to store the value plus a null terminator (i.e. 12)]
-; Postconditions: [++++++++++++TBU++++++++++++]
+; Description: Given a signed integer, converts the integer to a string and prints to the console
+; Preconditions: integer is a SDWORD or DWORD
+; Postconditions: integer is printed to the console
 ; Receives: 
 ;	[EBP + 8] = value of the number to convert to string & display
-; Returns: [++++++++++++TBU++++++++++++]
+; Returns: none
 ; ------------------------------------------------------------------------------------
 WriteVal PROC
 	; preserve registers
@@ -382,7 +400,7 @@ WriteVal PROC
 	; set up initial registers
 	MOV		ESI, [EBP + 8]
 	MOV		number, ESI					; move the number into local variable
-	MOV		sign, 0						; set up the sign as 0 (for positive)
+	MOV		sign, 1						; set up the sign as 1 (for positive)
 	MOV		ECX, LENGTHOF stringNumber	; length of destination in BYTES
 	LEA		EDI, stringNumber			; address of destination (BYTE string)
 	ADD		EDI, ECX
@@ -393,10 +411,10 @@ WriteVal PROC
 	MOV		AL, 0
 	STOSB
 
-	; if number is negative, make the first element of the string a '-', then convert number to positive
+	; if number is negative, set the sign to be -1 (for negative) then convert number to positive
 	CMP		number, 0
 	JGE		_digitToStringLoop
-	MOV		sign, 1
+	MOV		sign, -1
 	NEG		number
 
 _digitToStringLoop:
@@ -415,7 +433,7 @@ _digitToStringLoop:
 	JNE		_digitToStringLoop
 
 	; if the sign was negative, prepend a '-' symbol
-	CMP		sign, 1
+	CMP		sign, -1
 	JNE		_displayString
 	MOV		AL, "-"
 	STOSB
@@ -438,19 +456,19 @@ WriteVal ENDP
 
 ; ------------------------------------------------------------------------------------
 ; Name: ReadFloatVal
-; Description: [++++++++++++TBU++++++++++++]
-; Preconditions: [++++++++++++TBU++++++++++++]
-; Postconditions: [++++++++++++TBU++++++++++++]
+; Description: prompts the user to enter a floating point number, converts it to REAL10, and stores in memory
+; Preconditions: inputted number must fit in REAL10
+; Postconditions: prompt and/or error message is printed to the console
 ; Receives: 
 ;	[EBP + 8] = address of a prompt to display to the user
 ;	[EBP + 12] = address of the message if the input was invalid.
 ;	[EBP + 16] = address of the location to which the flot number will be saved
 ;	[EBP + 20] = address of the location to which the number of digits inputted will be saved
-; Returns:  [++++++++++++TBU++++++++++++]
+; Returns: the number in REAL10 format is saved into the given memory address
 ; ------------------------------------------------------------------------------------
 ReadFloatVal PROC
 	; set up local variables and preserve registers
-	LOCAL	sign:SDWORD, noLeadingZero:DWORD, ten:DWORD, digit:DWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
+	LOCAL	sign:SDWORD, ten:DWORD, digit:DWORD, isLeadingZero:DWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -468,9 +486,9 @@ _getString:
 	MOV		ECX, bytesInputted			; length of string as the counter	
 	LEA		ESI, stringNumber			; address of the integer string as source
 	MOV		EDI, [EBP + 16]				; address of destination (REAL10)
+	MOV		isLeadingZero, 1			; set up a condition check for trailing zeros; this helps turn '9.9000' into '9.9' 
 	MOV		sign, 1						; set up the sign as 1 (for positive)
 	MOV		ten, 10						; put the value ten into a memory variable for FPU calcs
-	MOV		noLeadingZero, 0			; will be used to test for leading 0's in the string (i.e.  -00908.875)
 	FINIT								; initialize the FPU
 	CLD									; iterate forwards through array
 	
@@ -506,19 +524,6 @@ _intLoop:
 	CMP		AL, 57
 	JA		_notValid
 	SUB		AL, 48
-	; if the digit is not a zero, increment the digit count
-	CMP		AL, 0
-	JNE		_incrementDigitCount
-	; if the digit is not a leading digit, increment the digit count
-	CMP		noLeadingZero, 0
-	JNE		_incrementDigitCount
-	JMP		_skipIncrementDigitCount
-	_incrementDigitCount:
-	; increment the count of digits inputted
-	MOV		noLeadingZero, 1
-	MOV		EDX, [EBP + 20]
-	INC		DWORD PTR [EDX]
-	_skipIncrementDigitCount:
 	; multiply the prior value on the stack by 10
 	FILD	ten
 	FMUL
@@ -531,7 +536,6 @@ _intLoop:
 	; add this value to the prior value on the stack and loop to next digit
 	FADD
 	LOOP	_intLoop
-
 	; if all digits are read and no decimal point was reached, store final value into the output and end
 	FSTP	REAL10 PTR [EDI]
 	JMP		_end
@@ -546,6 +550,7 @@ _decimalPoint:
 	STD							; set the direction flag to increment backwards
 	FLDZ						; ST(1) holds the 'integer part'; initialize 'fractional part' at ST(0) as the value zero
 
+
 _floatLoop:
 	; divide the prior value on the FPU stack by 10
 	FILD	ten
@@ -558,9 +563,19 @@ _floatLoop:
 	CMP		AL, 57
 	JA		_notValid
 	SUB		AL, 48
-	; increment the count of digits inputted
+	; if the digit is not a zero, increment the digit counter
+	CMP		AL, 0
+	JNE		_incrementDigits
+	; if the digit is a zero, but it is not a trailing zero (i.e. the zero in 9.908), increment the digit counter
+	CMP		isLeadingZero, 1
+	JNE		_incrementDigits
+	; otherwise, skip incrementing the digit counter
+	JMP		_skipIncrementDigits
+	_incrementDigits:
 	MOV		EDX, [EBP + 20]
 	INC		DWORD PTR [EDX]
+	MOV		isLeadingZero, 0
+	_skipIncrementDigits:
 	; load the value onto the FPU stack and divide it by 10
 	MOV		digit, EAX
 	FILD	digit
@@ -572,7 +587,6 @@ _floatLoop:
 	; add this value to the prior value on the stack and loop to next digit
 	FADD
 	LOOP	_floatLoop
-
 	; upon completion of all the 'fractional part' digits, add the integer part at ST(1) to the fractional part at ST(0)
 	FADD
 	FSTP	REAL10 PTR [EDI]
@@ -600,16 +614,16 @@ ReadFloatVal ENDP
 
 ; ------------------------------------------------------------------------------------
 ; Name: WriteFloatVal
-; Description: [++++++++++++TBU++++++++++++]
-; Preconditions: [++++++++++++TBU++++++++++++]
-; Postconditions: [++++++++++++TBU++++++++++++]
+; Description: Given a number in REAL10, converts the number to a string and prints to console
+; Preconditions: the number must be in REAL10
+; Postconditions: number is printed to the console
 ; Receives: 
 ;	ST(0)	  = the float number to write
 ;	[EBP + 8] = the number digits in the number (e.g. 987.1259 has 7 digits)
-; Returns:  [++++++++++++TBU++++++++++++]
+; Returns:  none
 ; ------------------------------------------------------------------------------------
 WriteFloatVal PROC
-	LOCAL ten:DWORD, roundNormal:WORD, roundDown: WORD, exponent:DWORD, digit:DWORD, stringNumber[20]:BYTE
+	LOCAL ten:DWORD, roundNormal:WORD, roundDown:WORD, exponent:DWORD, digit:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -624,7 +638,6 @@ WriteFloatVal PROC
 	MOV		digit, 0						; will hold the current digit in the string
 	LEA		EDI, stringNumber				; EDI holds the address of the string representation
 	CLD										; iterate forwards through array
-	MOV		ECX, [EBP + 8]					; counter holds the number of digits in the number
 	MOV		EAX, 0							; clear the accumulator
 	MOV		roundDown, 0000011101111111b	; default control word
 	MOV		roundNormal, 0000001101111111b	; control word setting RC to round down
@@ -646,7 +659,7 @@ _SciNotationLoop:
 	; check if the float is truncated to one digit
 	FIST	digit
 	CMP		digit, 10
-	JB		_toStringLoop
+	JB		_intToStringLoop
 	; othwerwise divide the float by 10 and increment count of decimal point moves
 	FILD	ten
 	FDIV
@@ -654,10 +667,37 @@ _SciNotationLoop:
 	JMP		_SciNotationLoop
 
 
-	; at this point, the float is at ST(0) and looks like '9.78875' and exponent holds '2'
-	; this code block dumps the float into a string representation digit by digit; ECX has the number of digits (e.g. 6 for above example)
-_toStringLoop:
-	; if this is the NOT the final digit round down; if it is the final digit, round it (change control WORD to default)
+	; at this point, the float is at ST(0) and looks like '9.78875' and exponent would hold '2'
+	; this code block dumps the integer part into a string representation digit by digit
+_intToStringLoop:
+	; add the leading digit to the string
+	FIST	digit
+	MOV		EAX, digit
+	ADD		EAX, 48
+	STOSB
+	; subtract the digit from the float (e.g. 9.78875 - 9 = 0.78875)
+	FILD	digit
+	FSUB
+	; multiply that value by 10 to move the decimal point (e.g. 0.78875 * 10 = 7.8875)
+	FILD	ten
+	FMUL
+	; if the exponent counter == 0, add a decimal point to string, otherwise loop back to keep adding the integer parts
+	CMP		exponent, 0
+	JE		_decimalPoint
+	DEC		exponent
+	JMP		_intToStringLoop
+
+
+	; add a decimal point to the string, set up the loop for the digits after the decimal point
+_decimalPoint:
+	MOV		AL, "."
+	STOSB
+	MOV		ECX, [EBP + 8]					; holds the number of decimal point digits in the number (e.g. 3 for above example)
+
+
+	; this code block dumps the digits after the decimal point into the a string
+_floatToStringLoop:
+	; if this is the NOT the final digit continue rounding down; if it is the final digit, change rounding methodology to normal
 	CMP		ECX, 1
 	JNE		_roundDown
 	FLDCW	roundNormal
@@ -673,14 +713,7 @@ _toStringLoop:
 	; multiply that value by 10 to move the decimal point (e.g. 0.78875 * 10 = 7.8875)
 	FILD	ten
 	FMUL
-	; if the exponent counter == 0, add a decimal point to the string output
-	CMP		exponent, 0
-	JNE		_skipDecimal
-	MOV		AL, "."
-	STOSB
-	_skipDecimal:	
-	DEC		exponent
-	LOOP	_toStringLoop
+	LOOP	_floatToStringLoop
 	
 
 	; add a null-terminator as the final string character
