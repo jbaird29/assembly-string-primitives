@@ -81,12 +81,12 @@ avgMsg			BYTE	"The rounded (down) average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 
 ; EXTRA CREDIT #1 variables
-ecMsg1			BYTE	"EC: Numbers lines and displays a running total",13,10,0
+ecMsg1			BYTE	"**EC: Numbers lines and displays a running total",13,10,0
 lineNum			DWORD	?
 currSumMsg		BYTE	"The current sum is: ",0
 
 ; EXTRA CREDIT #2 variables
-ecMsg2			BYTE	"EC: Adds procedures ReadFloatVal and WriteFloatVal",13,10,0
+ecMsg2			BYTE	"**EC: Adds procedures ReadFloatVal and WriteFloatVal",13,10,0
 floatArray		REAL10	TEST_COUNT DUP(?)
 digitCountArray	DWORD	TEST_COUNT DUP(?)
 floatSum		REAL10	?
@@ -169,10 +169,6 @@ _displayArrayLoop:
 ; Integer Sum / Average
 ;    Calculate and display the sum and average of the integers
 ; ----------------------------------------------------------------------------------------------------
-	MOV		ECX, LENGTHOF numArray
-	MOV		ESI, OFFSET numArray
-	MOV		EAX, 0
-	MOV		avg, 0
 	; display the sum
 	mDisplayString OFFSET sumMsg
 	PUSH	sum
@@ -220,7 +216,7 @@ _buildFloatArrayLoop:
 	JB		_skipUpdateMax
 	MOV		EBX, [EDX]
 	_skipUpdateMax:
-	; add this value to the prior value on the stack; print it using WriteFloatVal
+	; add this value to the prior value on the FPU stack; print it using WriteFloatVal
 	mDisplayString OFFSET currSumMsg
 	FLD		REAL10 PTR [EDI]
 	FADD
@@ -314,7 +310,7 @@ main ENDP
 ; ------------------------------------------------------------------------------------
 ReadVal PROC
 	; set up local variables and preserve registers
-	LOCAL	sign:DWORD, priorAccumulator:SDWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
+	LOCAL	sign:SDWORD, priorAccumulator:SDWORD, maxBytes:DWORD, bytesInputted:DWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -328,9 +324,9 @@ _getString:
 	mGetString [EBP + 8], ESI, maxBytes, EDI
 	; set up the registers
 	MOV		ECX, bytesInputted			; length of string as the counter	
-	LEA		ESI, stringNumber			; address of the integer string as source
-	MOV		EDI, [EBP + 16]				; address of destination (SDWORD)
-	MOV		sign, 0						; set up the sign as 0 (for positive)
+	LEA		ESI, stringNumber			; address of the string representation as source
+	MOV		EDI, [EBP + 16]				; address of destination to save to (SDWORD)
+	MOV		sign, 1						; set up the sign as 1 (for positive)
 	CLD									; iterate forwards through array
 	
 	; see if the first digit is a '+' or a '-'
@@ -345,8 +341,8 @@ _getString:
 	JMP		_charLoop
 
 _minusSymbol:
-	; if first digit is a '-' change the sign to 1 (for negative)
-	MOV		sign, 1
+	; if first digit is a '-' change the sign to -1 (for negative)
+	MOV		sign, -1
 _plusSymbol:
 	; for either symbol, decrement the char count; empty accumulator to set up the loop
 	DEC		ECX
@@ -368,7 +364,7 @@ _charLoop:
 	JA		_notValid
 	SUB		AL, 48
 	; if sign is negative, change the value to negative
-	CMP		sign, 0
+	CMP		sign, 1
 	JE		_positive
 	NEG		EAX	
 _positive:
@@ -409,7 +405,7 @@ ReadVal ENDP
 ; ------------------------------------------------------------------------------------
 WriteVal PROC
 	; preserve registers
-	LOCAL	number:SDWORD, sign:DWORD, stringNumber[20]:BYTE
+	LOCAL	number:SDWORD, sign:SDWORD, stringNumber[20]:BYTE
 	PUSH	EAX
 	PUSH	EBX
 	PUSH	ECX
@@ -424,8 +420,8 @@ WriteVal PROC
 	MOV		ECX, LENGTHOF stringNumber	; length of destination in BYTES
 	LEA		EDI, stringNumber			; address of destination (BYTE string)
 	ADD		EDI, ECX
-	DEC		EDI						; starting address + length - 1 = last element in string
-	STD								; set the direction flag (to increment backwards)
+	DEC		EDI							; starting address + length - 1 = last element in string
+	STD									; set the direction flag (to increment backwards)
 
 	; put a null-terminator as the last element in destination string
 	MOV		AL, 0
@@ -634,10 +630,10 @@ ReadFloatVal ENDP
 ; Name: WriteFloatVal
 ; Description: Given a number in REAL10, converts the number to a string and prints to console
 ; Preconditions: FPU stack is initialized with the given number at ST(0) in REAL10
-; Postconditions: number is printed to the console
+; Postconditions: number is printed to the console; number is STILL on the FPU stack at ST(0)
 ; Receives: 
 ;	ST(0)	  = the float number to write
-;	[EBP + 8] = the number digits in the number (e.g. 987.1259 has 7 digits)
+;	[EBP + 8] = the number digits after the decimal point (e.g. 987.1259 has 4 digits after decimal point)
 ; Returns:  none
 ; ------------------------------------------------------------------------------------
 WriteFloatVal PROC
@@ -658,7 +654,7 @@ WriteFloatVal PROC
 	LEA		EDI, stringNumber				; EDI holds the address of the string representation
 	CLD										; iterate forwards through array
 	MOV		EAX, 0							; clear the accumulator
-	MOV		ECX, [EBP + 8]					; holds the number of digits after the decimal point (e.g. 3 for above example)
+	MOV		ECX, [EBP + 8]					; holds the number of digits after the decimal point
 	MOV		roundDown, 0000011101111111b	; default control word
 	MOV		roundNormal, 0000001101111111b	; control word setting RC to round down
 	FLDCW	roundDown						; set control word RC to roundDown
