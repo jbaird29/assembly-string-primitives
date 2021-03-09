@@ -10,7 +10,19 @@ TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 
 INCLUDE Irvine32.inc
 
-; (insert macro definitions here)
+
+; ------------------------------------------------------------------------------------
+; Name: mGetString
+; Description: Prompts the user to enter a string and stores it into memory variable
+; Preconditions: uses registers EAX, ECX, and EDX
+; Postconditions: prompt printed to the console
+; Receives: 
+;	promptAddress = address, where a prompt message to the user is stored
+;	outputAddress = address, where the inputted string will be saved
+;	size = value, the maximum number of bytes which can be inputted
+;   bytesReadAddress = address, where the number of bytes inputted by the user will be saved
+; Returns:  string is saved into given memory address
+; ------------------------------------------------------------------------------------
 mGetString MACRO promptAddress:REQ, outputAddress:REQ, size:REQ, bytesReadAddress:REQ
 	PUSH	EDX
 	PUSH	ECX
@@ -27,6 +39,16 @@ mGetString MACRO promptAddress:REQ, outputAddress:REQ, size:REQ, bytesReadAddres
 	POP		EDX
 ENDM
 
+
+; ------------------------------------------------------------------------------------
+; Name: mDisplayString
+; Description: A string is printed to the console
+; Preconditions: uses registers EDX
+; Postconditions: string is printed to the console
+; Receives: 
+;	stringAddress = address, where a the string to be printed is saved
+; Returns:  none
+; ------------------------------------------------------------------------------------
 mDisplayString MACRO stringAddress:REQ
 	PUSH	EDX
 	MOV		EDX, stringAddress
@@ -35,7 +57,6 @@ mDisplayString MACRO stringAddress:REQ
 ENDM
 
 
-; (insert constant definitions here)
 TEST_COUNT = 3
 ;MAX_NUM = 2147483647
 ;MIN_NUM = -2147483648
@@ -59,10 +80,12 @@ avgMsg			BYTE	"The rounded average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 
 ; EXTRA CREDIT #1 variables
+ecMsg1			BYTE	"EC: Numbers lines and displays a running total",13,10,0
 lineNum			DWORD	?
 currSumMsg		BYTE	"The current sum is: ",0
 
 ; EXTRA CREDIT #2 variables
+ecMsg2			BYTE	"EC: Adds procedures ReadFloatVal and WriteFloatVal",13,10,0
 floatArray		REAL10	TEST_COUNT DUP(?)
 digitCountArray	DWORD	TEST_COUNT DUP(?)
 floatSum		REAL10	?
@@ -80,7 +103,10 @@ main PROC
 ; ----------------------------------------------------------------------------------------------------
 	mDisplayString OFFSET greeting
 	mDisplayString OFFSET instructions
-	
+	mDisplayString OFFSET ecMsg1
+	mDisplayString OFFSET ecMsg2
+	CALL	CrLf
+
 
 ; ----------------------------------------------------------------------------------------------------
 ; ReadVal
