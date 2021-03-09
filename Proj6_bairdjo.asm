@@ -1,7 +1,7 @@
 TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 
 ; Author: Jon Baird
-; Last Modified: 3/4/2021
+; Last Modified: 3/9/2021
 ; OSU email address: bairdjo@oregonstate.edu
 ; Course number/section:   CS271 Section 401
 ; Project Number: 6                Due Date: 3/14/2021
@@ -57,7 +57,8 @@ mDisplayString MACRO stringAddress:REQ
 ENDM
 
 
-TEST_COUNT = 3
+
+TEST_COUNT = 10
 ;MAX_NUM = 2147483647
 ;MIN_NUM = -2147483648
 
@@ -76,7 +77,7 @@ sum				SDWORD	?
 avg				SDWORD	?
 displayMsg		BYTE	"You entered the following numbers:",13,10,0
 sumMsg			BYTE	"The sum of these number is: ",0
-avgMsg			BYTE	"The rounded average is: ",0
+avgMsg			BYTE	"The rounded (down) average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 
 ; EXTRA CREDIT #1 variables
@@ -296,6 +297,8 @@ _displayFloatArrayLoop:
 
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
+
+
 
 
 ; ------------------------------------------------------------------------------------

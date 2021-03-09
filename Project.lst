@@ -1,11 +1,11 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:16:49
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Page 1 - 1
 
 
 				TITLE String Primitives and Macros     (Proj6_bairdjo.asm)
 
 				; Author: Jon Baird
-				; Last Modified: 3/4/2021
+				; Last Modified: 3/9/2021
 				; OSU email address: bairdjo@oregonstate.edu
 				; Course number/section:   CS271 Section 401
 				; Project Number: 6                Due Date: 3/14/2021
@@ -78,16 +78,17 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				ENDM
 
 
- = 00000003			TEST_COUNT = 3
+
+ = 0000000A			TEST_COUNT = 10
 				;MAX_NUM = 2147483647
 				;MIN_NUM = -2147483648
 
 
  00000000			.data
- 00000000  00000003 [		numArray		SDWORD	TEST_COUNT DUP(?)
+ 00000000  0000000A [		numArray		SDWORD	TEST_COUNT DUP(?)
 	    00000000
 	   ]
- 0000000C 50 72 6F 6A 65	greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
+ 00000028 50 72 6F 6A 65	greeting		BYTE	"Project 6: Designing low-level I/O procedures.     By: Jon Baird",13,10,13,10,0
 	   63 74 20 36 3A
 	   20 44 65 73 69
 	   67 6E 69 6E 67
@@ -101,7 +102,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   4A 6F 6E 20 42
 	   61 69 72 64 0D
 	   0A 0D 0A 00
- 00000051 50 6C 65 61 73	instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
+ 0000006D 50 6C 65 61 73	instructions	BYTE	"Please provide 10 signed decimal integers. ",13,10,
 	   65 20 70 72 6F
 	   76 69 64 65 20
 	   31 30 20 73 69
@@ -154,14 +155,14 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 										"Each number needs to be small enough to fit inside a 32 bit register. ",13,10,
 										"After you have finished inputting the raw numbers I will display a list of the integers, ",13,10,
 										"their sum, and their average value.",13,10,13,10,0
- 00000149 50 6C 65 61 73	prompt			BYTE	"Please enter a signed intger: ",0
+ 00000165 50 6C 65 61 73	prompt			BYTE	"Please enter a signed intger: ",0
 	   65 20 65 6E 74
 	   65 72 20 61 20
 	   73 69 67 6E 65
 	   64 20 69 6E 74
 	   67 65 72 3A 20
 	   00
- 00000168 45 52 52 4F 52	invalidMsg		BYTE	"ERROR. You did not enter a signed number or your number was too big.",13,10,0
+ 00000184 45 52 52 4F 52	invalidMsg		BYTE	"ERROR. You did not enter a signed number or your number was too big.",13,10,0
 	   2E 20 59 6F 75
 	   20 64 69 64 20
 	   6E 6F 74 20 65
@@ -177,9 +178,9 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   69 67 2E 0D 0A
 	   00
 
- 000001AF 00000000		sum				SDWORD	?
- 000001B3 00000000		avg				SDWORD	?
- 000001B7 59 6F 75 20 65	displayMsg		BYTE	"You entered the following numbers:",13,10,0
+ 000001CB 00000000		sum				SDWORD	?
+ 000001CF 00000000		avg				SDWORD	?
+ 000001D3 59 6F 75 20 65	displayMsg		BYTE	"You entered the following numbers:",13,10,0
 	   6E 74 65 72 65
 	   64 20 74 68 65
 	   20 66 6F 6C 6C
@@ -187,25 +188,27 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   20 6E 75 6D 62
 	   65 72 73 3A 0D
 	   0A 00
- 000001DC 54 68 65 20 73	sumMsg			BYTE	"The sum of these number is: ",0
+ 000001F8 54 68 65 20 73	sumMsg			BYTE	"The sum of these number is: ",0
 	   75 6D 20 6F 66
 	   20 74 68 65 73
 	   65 20 6E 75 6D
 	   62 65 72 20 69
 	   73 3A 20 00
- 000001F9 54 68 65 20 72	avgMsg			BYTE	"The rounded average is: ",0
+ 00000215 54 68 65 20 72	avgMsg			BYTE	"The rounded (down) average is: ",0
 	   6F 75 6E 64 65
-	   64 20 61 76 65
-	   72 61 67 65 20
-	   69 73 3A 20 00
- 00000212 54 68 61 6E 6B	goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
+	   64 20 28 64 6F
+	   77 6E 29 20 61
+	   76 65 72 61 67
+	   65 20 69 73 3A
+	   20 00
+ 00000235 54 68 61 6E 6B	goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
 	   73 20 66 6F 72
 	   20 70 6C 61 79
 	   69 6E 67 21 20
 	   0D 0A 00
 
 				; EXTRA CREDIT #1 variables
- 00000229 45 43 3A 20 4E	ecMsg1			BYTE	"EC: Numbers lines and displays a running total",13,10,0
+ 0000024C 45 43 3A 20 4E	ecMsg1			BYTE	"EC: Numbers lines and displays a running total",13,10,0
 	   75 6D 62 65 72
 	   73 20 6C 69 6E
 	   65 73 20 61 6E
@@ -215,15 +218,15 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   6E 6E 69 6E 67
 	   20 74 6F 74 61
 	   6C 0D 0A 00
- 0000025A 00000000		lineNum			DWORD	?
- 0000025E 54 68 65 20 63	currSumMsg		BYTE	"The current sum is: ",0
+ 0000027D 00000000		lineNum			DWORD	?
+ 00000281 54 68 65 20 63	currSumMsg		BYTE	"The current sum is: ",0
 	   75 72 72 65 6E
 	   74 20 73 75 6D
 	   20 69 73 3A 20
 	   00
 
 				; EXTRA CREDIT #2 variables
- 00000273 45 43 3A 20 41	ecMsg2			BYTE	"EC: Adds procedures ReadFloatVal and WriteFloatVal",13,10,0
+ 00000296 45 43 3A 20 41	ecMsg2			BYTE	"EC: Adds procedures ReadFloatVal and WriteFloatVal",13,10,0
 	   64 64 73 20 70
 	   72 6F 63 65 64
 	   75 72 65 73 20
@@ -234,18 +237,18 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   74 65 46 6C 6F
 	   61 74 56 61 6C
 	   0D 0A 00
- 000002A8  00000003 [		floatArray		REAL10	TEST_COUNT DUP(?)
+ 000002CB  0000000A [		floatArray		REAL10	TEST_COUNT DUP(?)
 	    00000000000000000000
 	   ]
- 000002C6  00000003 [		digitCountArray	DWORD	TEST_COUNT DUP(?)
+ 0000032F  0000000A [		digitCountArray	DWORD	TEST_COUNT DUP(?)
 	    00000000
 	   ]
- 000002D2			floatSum		REAL10	?
+ 00000357			floatSum		REAL10	?
 	   00000000000000000000
- 000002DC			floatAvg		REAL10	?
+ 00000361			floatAvg		REAL10	?
 	   00000000000000000000
- 000002E6 00000003		testCount		DWORD	TEST_COUNT
- 000002EA 50 6C 65 61 73	promptFloat		BYTE	"Please enter a floating point number: ",0
+ 0000036B 0000000A		testCount		DWORD	TEST_COUNT
+ 0000036F 50 6C 65 61 73	promptFloat		BYTE	"Please enter a floating point number: ",0
 	   65 20 65 6E 74
 	   65 72 20 61 20
 	   66 6C 6F 61 74
@@ -253,7 +256,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 	   6F 69 6E 74 20
 	   6E 75 6D 62 65
 	   72 3A 20 00
- 00000311 45 52 52 4F 52	invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
+ 00000396 45 52 52 4F 52	invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
 	   2E 20 59 6F 75
 	   20 64 69 64 20
 	   6E 6F 74 20 65
@@ -281,22 +284,22 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ----------------------------------------------------------------------------------------------------
 					mDisplayString OFFSET greeting
  00000000  52		     1		PUSH	EDX
- 00000001  BA 0000000C R     1		MOV		EDX, OFFSET greeting
+ 00000001  BA 00000028 R     1		MOV		EDX, OFFSET greeting
  00000006  E8 00000000 E     1		CALL	WriteString
  0000000B  5A		     1		POP		EDX
 					mDisplayString OFFSET instructions
  0000000C  52		     1		PUSH	EDX
- 0000000D  BA 00000051 R     1		MOV		EDX, OFFSET instructions
+ 0000000D  BA 0000006D R     1		MOV		EDX, OFFSET instructions
  00000012  E8 00000000 E     1		CALL	WriteString
  00000017  5A		     1		POP		EDX
 					mDisplayString OFFSET ecMsg1
  00000018  52		     1		PUSH	EDX
- 00000019  BA 00000229 R     1		MOV		EDX, OFFSET ecMsg1
+ 00000019  BA 0000024C R     1		MOV		EDX, OFFSET ecMsg1
  0000001E  E8 00000000 E     1		CALL	WriteString
  00000023  5A		     1		POP		EDX
 					mDisplayString OFFSET ecMsg2
  00000024  52		     1		PUSH	EDX
- 00000025  BA 00000273 R     1		MOV		EDX, OFFSET ecMsg2
+ 00000025  BA 00000296 R     1		MOV		EDX, OFFSET ecMsg2
  0000002A  E8 00000000 E     1		CALL	WriteString
  0000002F  5A		     1		POP		EDX
  00000030  E8 00000000 E		CALL	CrLf
@@ -306,35 +309,35 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ReadVal
 				;    Test loop - build an array of numbers; dispaly line number and running sum
 				; ----------------------------------------------------------------------------------------------------
- 00000035  B9 00000003			MOV		ECX, LENGTHOF numArray
+ 00000035  B9 0000000A			MOV		ECX, LENGTHOF numArray
  0000003A  BF 00000000 R		MOV		EDI, OFFSET numArray
- 0000003F  C7 05 0000025A R		MOV		lineNum, 1
+ 0000003F  C7 05 0000027D R		MOV		lineNum, 1
 	   00000001
  00000049			_buildArrayLoop:
 					; print the line number
- 00000049  FF 35 0000025A R		PUSH	lineNum
+ 00000049  FF 35 0000027D R		PUSH	lineNum
  0000004F  E8 000002BF			CALL	WriteVal
  00000054  B0 2D			MOV		AL, "-"
  00000056  E8 00000000 E		CALL	WriteChar
 					; get a number via ReadVal, store into the currrent position of numArray
  0000005B  57				PUSH	EDI
- 0000005C  68 00000168 R		PUSH	OFFSET invalidMsg
- 00000061  68 00000149 R		PUSH	OFFSET prompt
+ 0000005C  68 00000184 R		PUSH	OFFSET invalidMsg
+ 00000061  68 00000165 R		PUSH	OFFSET prompt
  00000066  E8 000001FC			CALL	ReadVal
 					; add the outputted number to sum
  0000006B  8B 07			MOV		EAX, [EDI]
- 0000006D  01 05 000001AF R		ADD		sum, EAX
+ 0000006D  01 05 000001CB R		ADD		sum, EAX
 					mDisplayString OFFSET currSumMsg
  00000073  52		     1		PUSH	EDX
- 00000074  BA 0000025E R     1		MOV		EDX, OFFSET currSumMsg
+ 00000074  BA 00000281 R     1		MOV		EDX, OFFSET currSumMsg
  00000079  E8 00000000 E     1		CALL	WriteString
  0000007E  5A		     1		POP		EDX
- 0000007F  FF 35 000001AF R		PUSH	sum
+ 0000007F  FF 35 000001CB R		PUSH	sum
  00000085  E8 00000289			CALL	WriteVal
  0000008A  E8 00000000 E		CALL	CrLf
 					; increment to the next position of numArray
  0000008F  83 C7 04			ADD		EDI, TYPE numArray
- 00000092  FF 05 0000025A R		INC		lineNum
+ 00000092  FF 05 0000027D R		INC		lineNum
  00000098  E2 AF			LOOP	_buildArrayLoop
 
 
@@ -344,10 +347,10 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ----------------------------------------------------------------------------------------------------
 					mDisplayString OFFSET displayMsg
  0000009A  52		     1		PUSH	EDX
- 0000009B  BA 000001B7 R     1		MOV		EDX, OFFSET displayMsg
+ 0000009B  BA 000001D3 R     1		MOV		EDX, OFFSET displayMsg
  000000A0  E8 00000000 E     1		CALL	WriteString
  000000A5  5A		     1		POP		EDX
- 000000A6  B9 00000003			MOV		ECX, LENGTHOF numArray
+ 000000A6  B9 0000000A			MOV		ECX, LENGTHOF numArray
  000000AB  BE 00000000 R		MOV		ESI, OFFSET numArray
  000000B0			_displayArrayLoop:
 					; display the current element of numArray
@@ -370,33 +373,33 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; Integer Sum / Average
 				;    Calculate and display the sum and average of the integers
 				; ----------------------------------------------------------------------------------------------------
- 000000D4  B9 00000003			MOV		ECX, LENGTHOF numArray
+ 000000D4  B9 0000000A			MOV		ECX, LENGTHOF numArray
  000000D9  BE 00000000 R		MOV		ESI, OFFSET numArray
  000000DE  B8 00000000			MOV		EAX, 0
- 000000E3  C7 05 000001B3 R		MOV		avg, 0
+ 000000E3  C7 05 000001CF R		MOV		avg, 0
 	   00000000
 					; display the sum
 					mDisplayString OFFSET sumMsg
  000000ED  52		     1		PUSH	EDX
- 000000EE  BA 000001DC R     1		MOV		EDX, OFFSET sumMsg
+ 000000EE  BA 000001F8 R     1		MOV		EDX, OFFSET sumMsg
  000000F3  E8 00000000 E     1		CALL	WriteString
  000000F8  5A		     1		POP		EDX
- 000000F9  FF 35 000001AF R		PUSH	sum
+ 000000F9  FF 35 000001CB R		PUSH	sum
  000000FF  E8 0000020F			CALL	WriteVal
  00000104  E8 00000000 E		CALL	CrLf
 					; calculate the average
- 00000109  A1 000001AF R		MOV		EAX, sum
+ 00000109  A1 000001CB R		MOV		EAX, sum
  0000010E  99				CDQ
- 0000010F  BB 00000003			MOV		EBX, TEST_COUNT
+ 0000010F  BB 0000000A			MOV		EBX, TEST_COUNT
  00000114  F7 FB			IDIV	EBX
- 00000116  A3 000001B3 R		MOV		avg, EAX
+ 00000116  A3 000001CF R		MOV		avg, EAX
 					; display the average
 					mDisplayString OFFSET avgMsg
  0000011B  52		     1		PUSH	EDX
- 0000011C  BA 000001F9 R     1		MOV		EDX, OFFSET avgMsg
+ 0000011C  BA 00000215 R     1		MOV		EDX, OFFSET avgMsg
  00000121  E8 00000000 E     1		CALL	WriteString
  00000126  5A		     1		POP		EDX
- 00000127  FF 35 000001B3 R		PUSH	avg
+ 00000127  FF 35 000001CF R		PUSH	avg
  0000012D  E8 000001E1			CALL	WriteVal
  00000132  E8 00000000 E		CALL	CrLf
  00000137  E8 00000000 E		CALL	CrLf
@@ -406,25 +409,25 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ReadFloatVal
 				;    Test loop - build an array of floating point numbers
 				; ----------------------------------------------------------------------------------------------------
- 0000013C  B9 00000003			MOV		ECX, LENGTHOF floatArray
- 00000141  BF 000002A8 R		MOV		EDI, OFFSET floatArray
- 00000146  BA 000002C6 R		MOV		EDX, OFFSET digitCountArray
+ 0000013C  B9 0000000A			MOV		ECX, LENGTHOF floatArray
+ 00000141  BF 000002CB R		MOV		EDI, OFFSET floatArray
+ 00000146  BA 0000032F R		MOV		EDX, OFFSET digitCountArray
  0000014B  BB 00000000			MOV		EBX, 0								; EBX will hold the # of decimal point digits to display
- 00000150  C7 05 0000025A R		MOV		lineNum, 1
+ 00000150  C7 05 0000027D R		MOV		lineNum, 1
 	   00000001
  0000015A  9B DB E3			FINIT
  0000015D  D9 EE			FLDZ
  0000015F			_buildFloatArrayLoop:
 					; print the line number
- 0000015F  FF 35 0000025A R		PUSH	lineNum
+ 0000015F  FF 35 0000027D R		PUSH	lineNum
  00000165  E8 000001A9			CALL	WriteVal
  0000016A  B0 2D			MOV		AL, "-"
  0000016C  E8 00000000 E		CALL	WriteChar
 					; get a number via ReadFloatVal, store into the currrent position of floatArray
  00000171  52				PUSH	EDX
  00000172  57				PUSH	EDI
- 00000173  68 00000311 R		PUSH	OFFSET invalidMsgFloat
- 00000178  68 000002EA R		PUSH	OFFSET promptFloat
+ 00000173  68 00000396 R		PUSH	OFFSET invalidMsgFloat
+ 00000178  68 0000036F R		PUSH	OFFSET promptFloat
  0000017D  E8 00000203			CALL	ReadFloatVal
 					; see if the number of digits (after the decimal point) should be increased
  00000182  39 1A			CMP		[EDX], EBX
@@ -434,7 +437,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 					; add this value to the prior value on the stack; print it using WriteFloatVal
 					mDisplayString OFFSET currSumMsg
  00000188  52		     1		PUSH	EDX
- 00000189  BA 0000025E R     1		MOV		EDX, OFFSET currSumMsg
+ 00000189  BA 00000281 R     1		MOV		EDX, OFFSET currSumMsg
  0000018E  E8 00000000 E     1		CALL	WriteString
  00000193  5A		     1		POP		EDX
  00000194  DB 2F			FLD		REAL10 PTR [EDI]
@@ -445,10 +448,10 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 					; increment to the next position of numArray and digitCountArray
  000001A3  83 C7 0A			ADD		EDI, TYPE floatArray
  000001A6  83 C2 04			ADD		EDX, TYPE digitCountArray
- 000001A9  FF 05 0000025A R		INC		lineNum
+ 000001A9  FF 05 0000027D R		INC		lineNum
  000001AF  E2 AE			LOOP	_buildFloatArrayLoop
 					; upon completion of the loop, store the current sum into memory
- 000001B1  DB 3D 000002D2 R		FSTP	floatSum
+ 000001B1  DB 3D 00000357 R		FSTP	floatSum
 
 				; ----------------------------------------------------------------------------------------------------
 				; WriteFloatVal
@@ -456,12 +459,12 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ----------------------------------------------------------------------------------------------------
 					mDisplayString OFFSET displayMsg
  000001B7  52		     1		PUSH	EDX
- 000001B8  BA 000001B7 R     1		MOV		EDX, OFFSET displayMsg
+ 000001B8  BA 000001D3 R     1		MOV		EDX, OFFSET displayMsg
  000001BD  E8 00000000 E     1		CALL	WriteString
  000001C2  5A		     1		POP		EDX
- 000001C3  B9 00000003			MOV		ECX, LENGTHOF floatArray
- 000001C8  BE 000002A8 R		MOV		ESI, OFFSET floatArray
- 000001CD  BA 000002C6 R		MOV		EDX, OFFSET digitCountArray
+ 000001C3  B9 0000000A			MOV		ECX, LENGTHOF floatArray
+ 000001C8  BE 000002CB R		MOV		ESI, OFFSET floatArray
+ 000001CD  BA 0000032F R		MOV		EDX, OFFSET digitCountArray
  000001D2			_displayFloatArrayLoop:
 					; display the float in the current position of floatArray
  000001D2  9B DB E3			FINIT
@@ -489,27 +492,27 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ----------------------------------------------------------------------------------------------------
 					; calculate the average of the floatArray elemenets
  000001FE  9B DB E3			FINIT
- 00000201  DB 2D 000002D2 R		FLD		floatSum
- 00000207  DB 05 000002E6 R		FILD	testCount
+ 00000201  DB 2D 00000357 R		FLD		floatSum
+ 00000207  DB 05 0000036B R		FILD	testCount
  0000020D  DE F9			FDIV
- 0000020F  DB 3D 000002DC R		FSTP	floatAvg
+ 0000020F  DB 3D 00000361 R		FSTP	floatAvg
 					; display the sum
 					mDisplayString OFFSET sumMsg
  00000215  52		     1		PUSH	EDX
- 00000216  BA 000001DC R     1		MOV		EDX, OFFSET sumMsg
+ 00000216  BA 000001F8 R     1		MOV		EDX, OFFSET sumMsg
  0000021B  E8 00000000 E     1		CALL	WriteString
  00000220  5A		     1		POP		EDX
- 00000221  DB 2D 000002D2 R		FLD		floatSum
+ 00000221  DB 2D 00000357 R		FLD		floatSum
  00000227  53				PUSH	EBX									; push the 'max digits' calculated above
  00000228  E8 00000262			CALL	WriteFloatVal
  0000022D  E8 00000000 E		CALL	CrLf
 					; display the average
 					mDisplayString OFFSET avgMsg
  00000232  52		     1		PUSH	EDX
- 00000233  BA 000001F9 R     1		MOV		EDX, OFFSET avgMsg
+ 00000233  BA 00000215 R     1		MOV		EDX, OFFSET avgMsg
  00000238  E8 00000000 E     1		CALL	WriteString
  0000023D  5A		     1		POP		EDX
- 0000023E  DB 2D 000002DC R		FLD		floatAvg
+ 0000023E  DB 2D 00000361 R		FLD		floatAvg
  00000244  53				PUSH	EBX									; push the 'max digits' calculated above
  00000245  E8 00000245			CALL	WriteFloatVal
  0000024A  E8 00000000 E		CALL	CrLf
@@ -522,7 +525,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 				; ----------------------------------------------------------------------------------------------------
 					mDisplayString OFFSET goodbyeMsg
  00000254  52		     1		PUSH	EDX
- 00000255  BA 00000212 R     1		MOV		EDX, OFFSET goodbyeMsg
+ 00000255  BA 00000235 R     1		MOV		EDX, OFFSET goodbyeMsg
  0000025A  E8 00000000 E     1		CALL	WriteString
  0000025F  5A		     1		POP		EDX
 
@@ -530,6 +533,8 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
  00000260  6A 00	   *	    push   +000000000h
  00000262  E8 00000000 E   *	    call   ExitProcess
  00000267			main ENDP
+
+
 
 
 				; ------------------------------------------------------------------------------------
@@ -1065,7 +1070,7 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:07:20
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/09/21 00:16:49
 4String Primitives and Macros     (Proj6_bairdjo.asm	     Symbols 2 - 1
 
 
@@ -1167,7 +1172,7 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000366 Para	  Public  'DATA'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 000003EB Para	  Public  'DATA'	
 _TEXT  . . . . . . . . . . . . .	32 Bit	 00000560 Para	  Public  'CODE'	
 
 
@@ -1471,7 +1476,7 @@ STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah
 STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
 SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
 TAB  . . . . . . . . . . . . . .	Number	 00000009h   
-TEST_COUNT . . . . . . . . . . .	Number	 00000003h   
+TEST_COUNT . . . . . . . . . . .	Number	 0000000Ah   
 TRUE . . . . . . . . . . . . . .	Number	 00000001h   
 TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
 VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
@@ -1555,43 +1560,43 @@ VK_UP  . . . . . . . . . . . . .	Number	 00000026h
 WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
 WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
-avgMsg . . . . . . . . . . . . .	Byte	 000001F9 _DATA	
-avg  . . . . . . . . . . . . . .	DWord	 000001B3 _DATA	
+avgMsg . . . . . . . . . . . . .	Byte	 00000215 _DATA	
+avg  . . . . . . . . . . . . . .	DWord	 000001CF _DATA	
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
-currSumMsg . . . . . . . . . . .	Byte	 0000025E _DATA	
+currSumMsg . . . . . . . . . . .	Byte	 00000281 _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
-digitCountArray  . . . . . . . .	DWord	 000002C6 _DATA	
-displayMsg . . . . . . . . . . .	Byte	 000001B7 _DATA	
-ecMsg1 . . . . . . . . . . . . .	Byte	 00000229 _DATA	
-ecMsg2 . . . . . . . . . . . . .	Byte	 00000273 _DATA	
+digitCountArray  . . . . . . . .	DWord	 0000032F _DATA	
+displayMsg . . . . . . . . . . .	Byte	 000001D3 _DATA	
+ecMsg1 . . . . . . . . . . . . .	Byte	 0000024C _DATA	
+ecMsg2 . . . . . . . . . . . . .	Byte	 00000296 _DATA	
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
-floatArray . . . . . . . . . . .	TByte	 000002A8 _DATA	
-floatAvg . . . . . . . . . . . .	TByte	 000002DC _DATA	
-floatSum . . . . . . . . . . . .	TByte	 000002D2 _DATA	
-goodbyeMsg . . . . . . . . . . .	Byte	 00000212 _DATA	
+floatArray . . . . . . . . . . .	TByte	 000002CB _DATA	
+floatAvg . . . . . . . . . . . .	TByte	 00000361 _DATA	
+floatSum . . . . . . . . . . . .	TByte	 00000357 _DATA	
+goodbyeMsg . . . . . . . . . . .	Byte	 00000235 _DATA	
 gray . . . . . . . . . . . . . .	Number	 00000008h   
 green  . . . . . . . . . . . . .	Number	 00000002h   
-greeting . . . . . . . . . . . .	Byte	 0000000C _DATA	
-instructions . . . . . . . . . .	Byte	 00000051 _DATA	
-invalidMsgFloat  . . . . . . . .	Byte	 00000311 _DATA	
-invalidMsg . . . . . . . . . . .	Byte	 00000168 _DATA	
+greeting . . . . . . . . . . . .	Byte	 00000028 _DATA	
+instructions . . . . . . . . . .	Byte	 0000006D _DATA	
+invalidMsgFloat  . . . . . . . .	Byte	 00000396 _DATA	
+invalidMsg . . . . . . . . . . .	Byte	 00000184 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
 lightGreen . . . . . . . . . . .	Number	 0000000Ah   
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
-lineNum  . . . . . . . . . . . .	DWord	 0000025A _DATA	
+lineNum  . . . . . . . . . . . .	DWord	 0000027D _DATA	
 magenta  . . . . . . . . . . . .	Number	 00000005h   
 numArray . . . . . . . . . . . .	DWord	 00000000 _DATA	
-promptFloat  . . . . . . . . . .	Byte	 000002EA _DATA	
-prompt . . . . . . . . . . . . .	Byte	 00000149 _DATA	
+promptFloat  . . . . . . . . . .	Byte	 0000036F _DATA	
+prompt . . . . . . . . . . . . .	Byte	 00000165 _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
-sumMsg . . . . . . . . . . . . .	Byte	 000001DC _DATA	
-sum  . . . . . . . . . . . . . .	DWord	 000001AF _DATA	
-testCount  . . . . . . . . . . .	DWord	 000002E6 _DATA	
+sumMsg . . . . . . . . . . . . .	Byte	 000001F8 _DATA	
+sum  . . . . . . . . . . . . . .	DWord	 000001CB _DATA	
+testCount  . . . . . . . . . . .	DWord	 0000036B _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
