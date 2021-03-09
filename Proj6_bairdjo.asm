@@ -94,26 +94,10 @@ testCount		DWORD	TEST_COUNT
 promptFloat		BYTE	"Please enter a floating point number: ",0
 invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
 
-floatNum		REAL10	?
-floatDigit		DWORD	?
+
 
 .code
 main PROC
-	; get a number via ReadFloatVal, store into the currrent position of floatArray
-	PUSH	OFFSET floatDigit
-	PUSH	OFFSET floatNum
-	PUSH	OFFSET invalidMsgFloat
-	PUSH	OFFSET promptFloat
-	CALL	ReadFloatVal
-	FLD		floatNum
-	PUSH	floatDigit
-	CALL	WriteFloatVal
-	CALL	CrLf
-	; WriteFloatVal BREAKS IN THE FOLLOWING TEST CASES:
-	;  10.0
-	;  10
-
-	
 ; ----------------------------------------------------------------------------------------------------
 ; Introduction
 ;    Display introduction messages
