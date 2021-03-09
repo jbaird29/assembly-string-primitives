@@ -94,9 +94,26 @@ testCount		DWORD	TEST_COUNT
 promptFloat		BYTE	"Please enter a floating point number: ",0
 invalidMsgFloat	BYTE	"ERROR. You did not enter a valid floating point number or your number was too big.",13,10,0
 
+floatNum		REAL10	?
+floatDigit		DWORD	?
 
 .code
 main PROC
+	; get a number via ReadFloatVal, store into the currrent position of floatArray
+	PUSH	OFFSET floatDigit
+	PUSH	OFFSET floatNum
+	PUSH	OFFSET invalidMsgFloat
+	PUSH	OFFSET promptFloat
+	CALL	ReadFloatVal
+	FLD		floatNum
+	PUSH	floatDigit
+	CALL	WriteFloatVal
+	CALL	CrLf
+	; WriteFloatVal BREAKS IN THE FOLLOWING TEST CASES:
+	;  10.0
+	;  10
+
+	
 ; ----------------------------------------------------------------------------------------------------
 ; Introduction
 ;    Display introduction messages
@@ -654,6 +671,7 @@ WriteFloatVal PROC
 	LEA		EDI, stringNumber				; EDI holds the address of the string representation
 	CLD										; iterate forwards through array
 	MOV		EAX, 0							; clear the accumulator
+	MOV		ECX, [EBP + 8]					; holds the number of digits after the decimal point (e.g. 3 for above example)
 	MOV		roundDown, 0000011101111111b	; default control word
 	MOV		roundNormal, 0000001101111111b	; control word setting RC to round down
 	FLDCW	roundDown						; set control word RC to roundDown
@@ -685,6 +703,13 @@ _SciNotationLoop:
 	; at this point, the float is at ST(0) and looks like '9.78875' and exponent would hold '2'
 	; this code block dumps the integer part into a string representation digit by digit
 _intToStringLoop:
+	; if there are no digits after the decimal point AND the exponent is zero, change rounding methodology
+	CMP		ECX, 0
+	JNE		_continue
+	CMP		exponent, 0
+	JNE		_continue
+	FLDCW	roundNormal
+	_continue:
 	; add the leading digit to the string
 	FIST	digit
 	MOV		EAX, digit
@@ -705,9 +730,11 @@ _intToStringLoop:
 
 	; add a decimal point to the string, set up the loop for the digits after the decimal point
 _decimalPoint:
+	; if there are no digits after the decimal point, then jump to end
+	CMP		ECX, 0
+	JE		_end
 	MOV		AL, "."
 	STOSB
-	MOV		ECX, [EBP + 8]					; holds the number of decimal point digits in the number (e.g. 3 for above example)
 
 
 	; this code block dumps the digits after the decimal point into the a string
@@ -729,8 +756,9 @@ _floatToStringLoop:
 	FILD	ten
 	FMUL
 	LOOP	_floatToStringLoop
+	JMP		_end
 	
-
+_end:
 	; add a null-terminator as the final string character
 	FSTP	remainder
 	MOV		EAX, 0
