@@ -79,6 +79,8 @@ displayMsg		BYTE	"You entered the following numbers:",13,10,0
 sumMsg			BYTE	"The sum of these number is: ",0
 avgMsg			BYTE	"The rounded (down) average is: ",0
 goodbyeMsg		BYTE	"Thanks for playing! ",13,10,0
+separator		BYTE	", ",0
+dash			BYTE	"- ",0
 
 ; EXTRA CREDIT #1 variables
 ecMsg1			BYTE	"**EC: Numbers lines and displays a running total",13,10,0
@@ -121,8 +123,7 @@ _buildArrayLoop:
 	; print the line number
 	PUSH	lineNum
 	CALL	WriteVal
-	MOV		AL, "-"
-	CALL	WriteChar
+	mDisplayString OFFSET dash
 	; get a number via ReadVal, store into the currrent position of numArray
 	PUSH	EDI
 	PUSH	OFFSET invalidMsg
@@ -156,10 +157,7 @@ _displayArrayLoop:
 	; print a comma and space, unless it is the last element in the array
 	CMP		ECX, 1
 	JE		_noSeparator
-	MOV		AL, ","
-	CALL	WriteChar
-	MOV		AL, " "
-	CALL	WriteChar
+	mDisplayString OFFSET separator
 	_noSeparator:
 	LOOP	_displayArrayLoop
 	CALL	CrLf
@@ -203,8 +201,7 @@ _buildFloatArrayLoop:
 	; print the line number
 	PUSH	lineNum
 	CALL	WriteVal
-	MOV		AL, "-"
-	CALL	WriteChar
+	mDisplayString OFFSET dash
 	; get a number via ReadFloatVal, store into the currrent position of floatArray
 	PUSH	EDX
 	PUSH	EDI
@@ -251,10 +248,7 @@ _displayFloatArrayLoop:
 	; print a comma and space before the next value
 	CMP		ECX, 1
 	JE		_skipSeparator
-	MOV		AL, ","
-	CALL	WriteChar
-	MOV		AL, " "
-	CALL	WriteChar
+	mDisplayString OFFSET separator
 	_skipSeparator:
 	LOOP	_displayFloatArrayLoop
 	CALL	CrLf
@@ -378,8 +372,7 @@ _positive:
 
 _notValid:
 	; print an error message to the user and go back to get another string
-	MOV		EDX, [EBP + 12]
-	CALL	WriteString
+	mDisplayString [EBP + 12]
 	JMP		_getString
 
 _end:
@@ -609,8 +602,7 @@ _floatLoop:
 
 _notValid:
 	; print an error message to the user and go back to get another string
-	MOV		EDX, [EBP + 12]
-	CALL	WriteString
+	mDisplayString [EBP + 12]
 	JMP		_getString
 
 
